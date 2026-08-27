@@ -1,0 +1,42 @@
+:root{
+/* the one slant used everywhere: wings and ribbons in the crest are dynamic, not horizontal */
+--angle-slant:10deg; /* @kind other */
+--angle-slant-neg:-10deg; /* @kind other */
+--slant-skew:skewY(-10deg); /* @kind other */
+--slant-clip-down:polygon(0 0,100% 0,100% calc(100% - 8.8%),0 100%); /* @kind other */
+--slant-clip-up:polygon(0 8.8%,100% 0,100% 100%,0 100%); /* @kind other */
+
+/* corners stay hard: this is a sports crest system, not a consumer app */
+--radius-0:0px;
+--radius-1:2px;
+--radius-pill:999px;
+
+--hairline:1px; /* @kind spacing */
+--rule-thin:2px; /* @kind spacing */
+--rule-thick:6px; /* @kind spacing */
+--rule-hero:12px; /* @kind spacing */
+
+/* Elevation exists for SCREEN INTERFACES ONLY (the club's channel surfaces, buttons, panels).
+   Printed and social creatives carry NO shadow: hierarchy is done with size and space.
+   No glow, no coloured shadow, no shadow under type — those are the amateur signatures. */
+--shadow-none:none;
+--shadow-1:0 1px 2px rgba(13,13,13,.06),0 1px 1px rgba(13,13,13,.04);
+--shadow-2:0 2px 4px rgba(13,13,13,.06),0 10px 24px -10px rgba(13,13,13,.16);
+--shadow-3:0 3px 8px rgba(13,13,13,.08),0 20px 44px -18px rgba(13,13,13,.26);
+--shadow-4:0 6px 18px rgba(13,13,13,.10),0 40px 90px -30px rgba(13,13,13,.38);
+--shadow-accent:none;
+--shadow-photo:none;
+--shadow-inset-top:inset 0 1px 0 rgba(255,255,255,.55);
+--shadow-print:none;
+
+/* protection gradient under text on photography */
+--grad-photo-bottom:linear-gradient(to top,rgba(13,13,13,.92) 0%,rgba(13,13,13,.70) 34%,rgba(13,13,13,0) 72%); /* @kind color */
+--grad-photo-side:linear-gradient(to right,rgba(13,13,13,.90) 0%,rgba(13,13,13,.45) 55%,rgba(13,13,13,0) 100%); /* @kind color */
+
+--sheen-accent:none; /* @kind color */ /* retired: gloss on a colour field reads as amateur */
+
+/* the duotone filter every photo goes through. Declare the SVG filter once per page. */
+--photo-filter:url(#uks-duo) contrast(1.06); /* @kind other */
+
+--focus-ring:0 0 0 3px rgba(217,70,38,.45);
+}

@@ -1,0 +1,103 @@
+:root{
+/* --- brand core, read from the logo vector --- */
+--uks-black:#000000;
+--uks-red:#C12E26;
+--uks-flame:#D94626;
+--uks-silver:#C6C6C6;
+--uks-white:#FFFFFF;
+
+/* --- red scale: this is the load-bearing colour of the system --- */
+--red-800:#6E140F;
+--red-700:#8F1D16;
+--red-600:#A32219;
+--red-500:#C12E26;
+--red-400:#D94626;
+--red-300:#E85C3A;
+--red-100:#FBE9E6;
+--red-050:#FDF5F3;
+
+/* --- neutrals --- */
+--grey-100:#F2F2F2;
+--grey-200:#E7E7E7;
+--grey-300:#C6C6C6;
+--grey-500:#8A8A8A;
+--grey-700:#4A4A4A;
+
+/* --- dark surfaces: only for photo-led creatives and the [data-theme="dark"] scope --- */
+--ink-900:#0D0D0D;
+--ink-800:#1A1A1A;
+--ink-700:#2B2B2B;
+
+/* --- semantic aliases: LIGHT is the default. White is the ground, red does the fighting,
+       black is ink for type and the logo only — never a large plane. --- */
+--surface-page:var(--uks-white);
+--surface-card:var(--uks-white);
+--surface-sunken:var(--grey-100);
+--surface-tint:var(--red-050);
+--surface-accent:var(--red-500);
+--surface-accent-strong:var(--red-600);
+--surface-invert:var(--ink-900);
+
+--border-hairline:#E6E6E6;
+--border-strong:var(--grey-300);
+--border-accent:var(--red-500);
+
+--text-primary:var(--ink-900);
+--text-secondary:var(--grey-700);
+--text-muted:var(--grey-500);
+/* small text on white needs 7.5:1 — red-600, never flame (4.33:1) */
+--text-accent:var(--red-600);
+--text-on-accent:var(--uks-white);
+
+--accent:var(--red-500);
+--accent-hover:var(--red-400);
+--accent-press:var(--red-700);
+
+/* Red is an ACCENT, not a ground: aim for about 5% of a creative's area. Flat, never a
+   gradient, never a sheen. A large black-and-white composition with one red element beats
+   a creative drowned in red. */
+--grad-accent:var(--red-500);
+--grad-accent-soft:var(--red-500);
+--grad-paper:linear-gradient(180deg,var(--uks-white) 0%,var(--grey-100) 100%);
+
+/* photo scrim: never below 40% or the mono-white logo stops holding */
+--scrim-photo:rgba(13,13,13,.52); /* @kind color */
+--scrim-photo-min:rgba(13,13,13,.40); /* @kind color */
+--scrim-photo-deep:rgba(13,13,13,.74); /* @kind color */
+/* duotone endpoints: every club photo is graded from these two values. Kills the orange
+   floor and the green walls of a school hall, which is what makes raw phone shots unusable. */
+--duotone-shadow:#0D0D0D;
+--duotone-highlight:#D9382E;
+}
+
+/* Dark scope. Used where photography carries the whole frame, and for screens on the hall
+   wall. It is a mode now, not the default. */
+[data-theme="dark"],.theme-dark{
+--surface-page:var(--ink-900);
+--surface-card:var(--ink-800);
+--surface-sunken:var(--ink-800);
+--surface-tint:var(--ink-800);
+--surface-invert:var(--uks-white);
+--border-hairline:var(--ink-700);
+--border-strong:var(--grey-700);
+--text-primary:var(--uks-white);
+--text-secondary:var(--grey-300);
+--text-muted:var(--grey-500);
+--text-accent:var(--red-400);
+--accent:var(--red-500);
+--accent-hover:var(--red-400);
+--accent-press:var(--red-600);
+}
+
+/* Print scope: same light ground, but no shadows and no gradients on large fields —
+   cheap paper turns them into mud. */
+[data-theme="print"],.theme-print{
+--surface-page:var(--uks-white);
+--surface-card:var(--uks-white);
+--surface-sunken:var(--grey-100);
+--grad-accent:var(--red-500);
+--grad-accent-soft:var(--red-500);
+--border-hairline:#DCDCDC;
+--text-accent:var(--red-600);
+--accent:var(--red-600);
+}

@@ -1,0 +1,28 @@
+:root{
+--s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:24px;--s-6:32px;--s-7:48px;--s-8:64px;--s-9:96px;--s-10:128px;
+
+/* 12-column grid, outer margin = 6% of the shorter side, in every format */
+--grid-cols:12; /* @kind other */
+--grid-gutter:2.2%; /* @kind spacing */
+--margin-ratio:6%; /* @kind spacing */
+
+/* concrete margins per canvas */
+--margin-1080:65px;  /* 6% of 1080 */
+--margin-story:65px; /* 1080x1920 -> 6% of 1080 */
+--margin-cover:37px; /* 6% of 624 */
+--margin-print:14mm;
+
+/* Facebook cover safe band: design 1640x624, keep everything vital inside 1090x450 centred */
+--cover-safe-w:1090px;
+--cover-safe-h:450px;
+
+/* logo clear space = height of the HANDBALL CLUB ribbon = 0.14 x logo width */
+--logo-clearspace-ratio:0.14; /* @kind other */
+--logo-min-screen:140px;
+--logo-min-print:25mm; /* @kind spacing */
+
+/* partner logo bar: fixed-height zone, foreign marks never scale the layout */
+--partner-bar-h:96px;
+--partner-slot-h:56px;
+--partner-slot-gap:40px;
+}
