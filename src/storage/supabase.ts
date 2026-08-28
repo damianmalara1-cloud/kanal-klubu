@@ -1,6 +1,15 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Storage } from './types';
 
+function isNotFound(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as Record<string, unknown>;
+  const status = typeof err.status === 'number' ? err.status : undefined;
+  const statusCode = typeof err.statusCode === 'string' ? err.statusCode : undefined;
+  const message = typeof err.message === 'string' ? err.message : '';
+  return status === 404 || statusCode === '404' || (status === 400 && /not found/i.test(message)) || /not found/i.test(message);
+}
+
 export class SupabaseStorage implements Storage {
   private sb: SupabaseClient;
 
@@ -15,7 +24,11 @@ export class SupabaseStorage implements Storage {
 
   async get(path: string) {
     const { data, error } = await this.sb.storage.from(this.bucket).download(path);
-    if (error) return null;
+    if (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+    if (!data) return null;
     return Buffer.from(await data.arrayBuffer());
   }
 
