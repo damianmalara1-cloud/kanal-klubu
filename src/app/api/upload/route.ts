@@ -22,8 +22,17 @@ export async function POST(req: Request) {
   if (Number.isFinite(contentLength) && contentLength > UPLOAD_CONTENT_LENGTH_LIMIT) {
     return Response.json({ error: 'Zdjęcie jest za duże (max 4 MB)' }, { status: 413 });
   }
+  let fd: FormData;
   try {
-    const fd = await req.formData();
+    fd = await req.formData();
+  } catch (e) {
+    // Trener odświeżył stronę albo telefon zablokował ekran w połowie wysyłki — urwane body to
+    // normalny przebieg, nie awaria appki. `error` zostaje dla rzeczy, które ktoś ma naprawić,
+    // inaczej log produkcyjny tonie w zdarzeniach, na które nikt nic nie poradzi.
+    log.warn('upload przerwany', { err: errMessage(e) });
+    return Response.json({ error: 'Wysyłanie zdjęcia zostało przerwane' }, { status: 400 });
+  }
+  try {
     const file = fd.get('file');
     if (!(file instanceof File)) return Response.json({ error: 'Brak pliku' }, { status: 400 });
     const { path } = await attachPhoto(id, Buffer.from(await file.arrayBuffer()));

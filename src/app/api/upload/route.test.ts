@@ -13,6 +13,7 @@ vi.mock('@/workflow/draft', async (importOriginal) => {
 import sharp from 'sharp';
 import { POST } from './route';
 import { createDraft, MAX_UPLOAD_BYTES } from '@/workflow/draft';
+import { log } from '@/lib/log';
 
 const S = 'abcdefghijklmnop';
 beforeEach(() => {
@@ -57,5 +58,28 @@ describe('POST /api/upload', () => {
     expect(typeof body.path).toBe('string');
     expect(attachPhotoSpy).toHaveBeenCalledTimes(1);
     expect(bytes.length).toBeLessThan(MAX_UPLOAD_BYTES);
+  });
+
+  // R-02: przerwana wysyłka (odświeżenie strony, blokada ekranu) szła do logu jako `error`, choć nie
+  // ma tam nic do naprawienia — i tak zagłuszała realne awarie uploadu.
+  it('przerwane body → warn, nie error (i bez wywołania attachPhoto)', async () => {
+    const errSpy = vi.spyOn(log, 'error').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(log, 'warn').mockImplementation(() => {});
+    const body = new ReadableStream({ start: (c) => c.error(new Error('połączenie zerwane')) });
+    const r = await POST(
+      new Request(`http://x/api/upload?secret=${S}&id=abc`, {
+        method: 'POST',
+        headers: { 'content-type': 'multipart/form-data; boundary=xyz' },
+        body,
+        // @ts-expect-error `duplex` jest wymagane dla body-strumienia, ale nie ma go w typach DOM-owych
+        duplex: 'half',
+      }),
+    );
+    expect(r.status).toBe(400);
+    expect(await r.json()).toEqual({ error: 'Wysyłanie zdjęcia zostało przerwane' });
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy).not.toHaveBeenCalled();
+    expect(attachPhotoSpy).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });
