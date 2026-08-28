@@ -10,12 +10,16 @@ export function TeamSelect({
   onChange,
   teams,
   allowAll = false,
+  required = false,
   id = 'team',
 }: {
   value: string;
   onChange: (v: string) => void;
   teams: string[];
   allowAll?: boolean;
+  /** Mecz/turniej/sukces: drużyna jest wymagana, bo to jedyne pole decydujące o stopce i pasie KLUB PRO
+   * (§8 umowy z Fundacją). Ogłoszenie zostaje opcjonalne — „cały klub" to legalny wybór. */
+  required?: boolean;
   id?: string;
 }) {
   // Spec §3.1: trener musi móc opisać drużynę spoza listy (turniej rocznikowy, kadra, oldboye). Tryb wolnego
@@ -31,6 +35,7 @@ export function TeamSelect({
         <label htmlFor={id}>Drużyna</label>
         <select
           id={id}
+          required={required}
           value={free ? OTHER : value}
           onChange={(e) => {
             const v = e.target.value;
@@ -50,7 +55,7 @@ export function TeamSelect({
       {free && (
         <div className="field">
           <label htmlFor={`${id}-inna`}>Jaka drużyna?</label>
-          <input id={`${id}-inna`} aria-label="Inna drużyna" value={value} maxLength={40} placeholder="np. oldboye" onChange={(e) => onChange(e.target.value)} />
+          <input id={`${id}-inna`} aria-label="Inna drużyna" required={required} value={value} maxLength={40} placeholder="np. oldboye" onChange={(e) => onChange(e.target.value)} />
         </div>
       )}
     </>

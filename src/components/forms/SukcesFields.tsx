@@ -19,7 +19,7 @@ export function SukcesFields({ values, set, teams }: FieldsProps) {
           <option value="inne">inne</option>
         </select>
       </div>
-      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} />
+      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} required />
       <div className="field">
         <label htmlFor="details">Szczegóły</label>
         <textarea id="details" value={values.details ?? ''} onChange={(e) => set('details', e.target.value)} placeholder="Gdzie, kiedy, za co" />

@@ -12,7 +12,7 @@ export function TurniejFields({ values, set, teams }: FieldsProps) {
         <label htmlFor="place">Miejsce</label>
         <input id="place" value={values.place ?? ''} onChange={(e) => set('place', e.target.value)} />
       </div>
-      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} />
+      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} required />
       <div className="field">
         <label htmlFor="result">Zajęte miejsce / wynik</label>
         <input id="result" value={values.result ?? ''} onChange={(e) => set('result', e.target.value)} placeholder="np. 2. miejsce" />

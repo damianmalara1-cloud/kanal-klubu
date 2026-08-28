@@ -5,7 +5,7 @@ export type FieldsProps = { values: Record<string, string>; set: (k: string, v: 
 export function MeczFields({ values, set, teams }: FieldsProps) {
   return (
     <>
-      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} />
+      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} required />
       <div className="field">
         <label htmlFor="opponent">Rywal</label>
         <input id="opponent" required value={values.opponent ?? ''} onChange={(e) => set('opponent', e.target.value)} placeholder="np. Sokół Gdańsk" />
