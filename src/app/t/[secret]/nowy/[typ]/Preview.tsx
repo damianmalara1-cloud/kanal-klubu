@@ -30,6 +30,7 @@ export function Preview({
       <button className="btn btn-primary" type="button" disabled={busy || caption.trim().length < 20} onClick={async () => { setBusy(true); try { await onFinish(caption); } finally { setBusy(false); } }}>Gotowe</button>
       <div className="rule" />
       <div className="field"><label htmlFor="note">Podpowiedź (opcjonalnie)</label><input id="note" aria-label="Podpowiedź do wygenerowania" value={note} onChange={(e) => setNote(e.target.value)} placeholder="np. krócej, wspomnij o bramkarce" /></div>
+      <p className="muted" style={{ fontSize: 13, margin: 0 }}>„Wygeneruj inaczej" zastąpi cały tekst — Twoje poprawki znikną.</p>
       <button className="btn" type="button" disabled={!gen.canRegen} onClick={() => onRegenerate(note)}>{gen.canRegen ? 'Wygeneruj inaczej' : 'Limit prób — popraw tekst ręcznie'}</button>
       <button className="btn" type="button" onClick={onBack}>Popraw dane</button>
     </div>
