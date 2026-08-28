@@ -5,7 +5,7 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { formTeam, parseForm } from '@/domain/forms';
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
-import type { Post, PostType } from '@/domain/types';
+import { POST_TYPES, type Post, type PostType } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
 
@@ -19,6 +19,9 @@ export async function createDraft(input: { author: string; type: PostType; form:
   const c = getConfig();
   const repo = getRepo();
   if (!c.coachNames.includes(input.author)) throw new AppError('Nieznany trener — wybierz imię z listy', 400);
+  // `parseForm` to switch bez default'a — nieznany typ przeszedłby przez niego na `undefined` i padł dopiero
+  // w `formTeam` jako TypeError (500). Typ przychodzi z URL-a (`/nowy/[typ]`), więc sprawdzamy go w runtime.
+  if (!POST_TYPES.includes(input.type)) throw new AppError('Nieznany typ posta', 400);
   const form = parseForm(input.type, input.form);
   if (input.ip && (await repo.countCreatedSince(input.ip, plusHours(nowIso(), -1))) >= DRAFTS_PER_HOUR_PER_IP) {
     throw new AppError('Za dużo prób, spróbuj za chwilę', 429);

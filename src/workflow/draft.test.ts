@@ -29,6 +29,14 @@ describe('createDraft', () => {
     await expect(createDraft({ ...mecz(null), form: { opponent: '' } })).rejects.toThrow();
   });
 
+  it('nieznany typ posta → AppError 400, zanim ruszy walidacja formularza', async () => {
+    // `parseForm` to switch bez default'a — bez strażnika nieznany typ (przerobiony URL, stary link)
+    // przechodzi przez niego na `undefined` i pada dopiero w `formTeam` jako TypeError → 500.
+    const bad = { ...mecz(null), type: 'cokolwiek' as unknown as 'mecz' };
+    await expect(createDraft(bad)).rejects.toThrow(/Nieznany typ posta/);
+    await expect(createDraft(bad)).rejects.toMatchObject({ status: 400 });
+  });
+
   it('rate limit 20/h z IP', async () => {
     for (let i = 0; i < 20; i++) await createDraft(mecz(null));
     await expect(createDraft(mecz(null))).rejects.toThrow(/Za dużo/);
