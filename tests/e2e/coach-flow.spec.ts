@@ -71,4 +71,17 @@ test('trener: usuwanie zdjęcia, drużyna spoza listy, powrót po odświeżeniu'
   await page.getByRole('button', { name: 'Usuń zdjęcie 1' }).click();
   await expect(page.getByText('Zdjęcia (1/10)')).toBeVisible();
   await expect(page.getByRole('button', { name: /Zdjęcie 2 na planszę/ })).toHaveCount(0);
+
+  // C2/M-8: drużyna spoza listy — po wybraniu „inna" wolny tekst idzie jako `team` (spec §3.1).
+  await page.getByLabel('Drużyna', { exact: true }).selectOption({ label: 'inna' });
+  await page.getByLabel('Inna drużyna').fill('oldboye');
+  await page.getByLabel('Rywal', { exact: true }).fill('Sokół Gdańsk');
+  await page.getByLabel('Bramki UKS Banino').fill('30');
+  await page.getByLabel('Bramki rywala').fill('21');
+  await page.getByRole('button', { name: 'Wygeneruj post' }).click();
+  await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
+  await page.getByLabel('Tekst posta').fill('Wygrana 30 : 21 z Sokołem Gdańsk. Brawo oldboye.');
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+  await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Mecz · UKS Banino 30 : 21 Sokół Gdańsk · oldboye/)).toBeVisible();
 });
