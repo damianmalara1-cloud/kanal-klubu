@@ -1,9 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { processFiles, type PickedPhoto } from './photoProcess';
+import { processFiles, removePhoto, type PickedPhoto } from './photoProcess';
 
 type FakeFile = { size: number; name: string };
 const file = (size: number, name = 'zdjecie.jpg'): FakeFile => ({ size, name });
 const makeUrl = (b: Blob) => `blob:${b.size}`;
+/** Fabryka kafla — trzyma kształt `PickedPhoto` w jednym miejscu na wypadek zmiany pól. */
+const pp = (key: string): PickedPhoto => ({ key, blob: new Blob([key]), url: `blob:${key}` });
 
 describe('processFiles', () => {
   it('zatrzymuje się po osiągnięciu limitu max', async () => {
@@ -63,5 +65,39 @@ describe('processFiles', () => {
     const { photos } = await processFiles([file(10), file(10)], current, shrink, { max: 2, maxBytes: 100, makeUrl });
     expect(photos).toHaveLength(2);
     expect(photos[0]).toBe(current[0]);
+  });
+});
+
+describe('removePhoto', () => {
+  const list = [pp('a'), pp('b'), pp('c')];
+
+  it('usunięcie zdjęcia przed planszą przesuwa wskaźnik planszy o jeden w dół', () => {
+    const r = removePhoto(list, 2, 0);
+    expect(r.photos.map((p) => p.key)).toEqual(['b', 'c']);
+    expect(r.hero).toBe(1);
+  });
+
+  it('usunięcie samej planszy cofa wybór na pierwsze zdjęcie', () => {
+    const r = removePhoto(list, 1, 1);
+    expect(r.photos.map((p) => p.key)).toEqual(['a', 'c']);
+    expect(r.hero).toBe(0);
+  });
+
+  it('usunięcie zdjęcia po planszy zostawia wskaźnik planszy bez zmian', () => {
+    const r = removePhoto(list, 0, 2);
+    expect(r.photos.map((p) => p.key)).toEqual(['a', 'b']);
+    expect(r.hero).toBe(0);
+  });
+
+  it('usunięcie ostatniego zdjęcia zeruje wskaźnik planszy', () => {
+    const r = removePhoto([pp('a')], 0, 0);
+    expect(r.photos).toEqual([]);
+    expect(r.hero).toBe(0);
+  });
+
+  it('indeks spoza listy nie zmienia niczego', () => {
+    const r = removePhoto(list, 2, 5);
+    expect(r.photos).toEqual(list);
+    expect(r.hero).toBe(2);
   });
 });

@@ -36,3 +36,13 @@ export async function processFiles<F extends SizedFile>(
   }
   return { photos, errors };
 }
+
+/** Usuwa zdjęcie spod `index` i koryguje wskaźnik planszy tak, żeby dalej wskazywał to samo zdjęcie co
+ * przed usunięciem: skasowana plansza → wraca na pierwsze, skasowane zdjęcie przed planszą → wskaźnik w dół.
+ * Bez tego trener, który usunie zdjęcie z lewej, dostaje na planszy inne niż wybrał — po cichu. */
+export function removePhoto(photos: PickedPhoto[], hero: number, index: number): { photos: PickedPhoto[]; hero: number } {
+  if (index < 0 || index >= photos.length) return { photos, hero };
+  const next = photos.filter((_, i) => i !== index);
+  const nextHero = index === hero || next.length === 0 ? 0 : index < hero ? hero - 1 : hero;
+  return { photos: next, hero: nextHero };
+}

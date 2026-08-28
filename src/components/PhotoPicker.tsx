@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
-import { processFiles, type PickedPhoto } from './photoProcess';
+import { processFiles, removePhoto, type PickedPhoto } from './photoProcess';
 
 export type { PickedPhoto };
 
@@ -45,6 +45,20 @@ export function PhotoPicker({
     if (input.current) input.current.value = '';
   }
 
+  function remove(i: number) {
+    const gone = photos[i];
+    const r = removePhoto(photos, heroIndex, i);
+    if (r.photos === photos) return;
+    // Podgląd trzyma blob w pamięci karty do końca życia dokumentu — po usunięciu zwalniamy go ręcznie.
+    try {
+      URL.revokeObjectURL(gone.url);
+    } catch {
+      /* brak URL.revokeObjectURL — nic nie tracimy poza pamięcią podglądu */
+    }
+    if (r.hero !== heroIndex) onHero(r.hero);
+    onChange(r.photos);
+  }
+
   return (
     <div className="field">
       <label htmlFor="photos">
@@ -62,10 +76,15 @@ export function PhotoPicker({
       {photos.length > 0 && (
         <div className="thumbs">
           {photos.map((p, i) => (
-            <button type="button" key={p.key} className="thumb" aria-pressed={i === heroIndex} aria-label={`Zdjęcie ${i + 1} na planszę`} onClick={() => onHero(i)}>
-              <img src={p.url} alt="" />
-              {i === heroIndex && <span>plansza</span>}
-            </button>
+            <div className="thumb-wrap" key={p.key}>
+              <button type="button" className="thumb" aria-pressed={i === heroIndex} aria-label={`Zdjęcie ${i + 1} na planszę`} onClick={() => onHero(i)}>
+                <img src={p.url} alt="" />
+                {i === heroIndex && <span>plansza</span>}
+              </button>
+              <button type="button" className="thumb-del" aria-label={`Usuń zdjęcie ${i + 1}`} onClick={() => remove(i)}>
+                usuń
+              </button>
+            </div>
           ))}
         </div>
       )}

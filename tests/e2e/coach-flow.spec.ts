@@ -58,3 +58,17 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
   await page.getByRole('link', { name: /Mecz · UKS Banino 24 : 18 Sokół Gdańsk/ }).click();
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible();
 });
+
+// Drugi, krótki przebieg: rzeczy, które trener robi POZA szczęśliwą ścieżką — poprawianie tego, co już wpisał.
+test('trener: usuwanie zdjęcia, drużyna spoza listy, powrót po odświeżeniu', async ({ page }) => {
+  await page.goto(`/t/${SECRET}`);
+  await page.getByRole('button', { name: 'Ania' }).click();
+  await page.getByRole('link', { name: 'Mecz' }).click();
+
+  // C1/D-01: dodane zdjęcie da się usunąć (bez tego zły plik blokował cały przepływ).
+  await page.getByLabel('Dodaj zdjęcia').setInputFiles(['tests/e2e/fixtures/foto.jpg', 'tests/e2e/fixtures/foto.jpg']);
+  await expect(page.getByText('Zdjęcia (2/10)')).toBeVisible();
+  await page.getByRole('button', { name: 'Usuń zdjęcie 1' }).click();
+  await expect(page.getByText('Zdjęcia (1/10)')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Zdjęcie 2 na planszę/ })).toHaveCount(0);
+});
