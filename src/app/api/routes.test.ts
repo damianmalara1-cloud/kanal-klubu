@@ -61,6 +61,6 @@ describe('cron', () => {
     await getRepo().update(d.id, { purgeAfter: '2000-01-01T00:00:00.000Z' });
     const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer cron' } }));
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ purged: 0, deletedDrafts: 1 });
+    expect(await r.json()).toEqual({ purged: 0, deletedDrafts: 1, failed: 0 });
   });
 });
