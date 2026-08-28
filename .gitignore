@@ -46,3 +46,8 @@ src/creative/assets.generated.ts
 
 # próbki kreacji (patrz scripts/render-samples.ts) — regenerowane, nie commitujemy
 /samples
+
+# E2E (Playwright) — fixture generowana przez global-setup.ts, artefakty z runów
+tests/e2e/fixtures/
+/test-results/
+/playwright-report/
