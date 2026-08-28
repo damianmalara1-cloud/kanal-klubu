@@ -13,7 +13,9 @@ export async function purge(now: string = nowIso()): Promise<{ purged: number; d
     try {
       await storage.remove([...p.photos, p.creativePath].filter((x): x is string => !!x));
       if (p.status === 'draft') { await repo.delete(p.id); deletedDrafts++; }
-      else { await repo.update(p.id, { photos: [], heroPhoto: null, creativePath: null, purgedAt: now }); purged++; }
+      // `ip` znika razem z plikami — było potrzebne wyłącznie do rate limitu 20 postów/h w oknie godziny,
+      // po retencji zostaje log posta (kto, co, kiedy), a nie dana osobowa trzymana bezterminowo.
+      else { await repo.update(p.id, { photos: [], heroPhoto: null, creativePath: null, purgedAt: now, ip: null }); purged++; }
     } catch (e) {
       log.error('purge', { id: p.id, err: e instanceof Error ? e.message : String(e) });
       failed++;
