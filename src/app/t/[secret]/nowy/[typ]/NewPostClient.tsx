@@ -26,6 +26,9 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
   const [id, setId] = useState<string | null>(null);
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [gen, setGen] = useState<Generated | null>(null);
+  // Tekst posta mieszka tutaj, nie w `Preview` — „Popraw dane" odmontowuje podgląd, a ręczna poprawka
+  // trenera ma przeżyć powrót do formularza (UAT D-03). Ustawiany przy KAŻDEJ nowej generacji.
+  const [caption, setCaption] = useState('');
   useEffect(() => {
     try {
       setAuthor(localStorage.getItem('kk-author') ?? '');
@@ -43,6 +46,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
     setId(null);
     setUploadedPaths([]);
     setGen(null);
+    setCaption('');
   }
   const set = (k: string, v: string) => {
     setValues((s) => ({ ...s, [k]: v }));
@@ -99,6 +103,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       const g = await generateAction(secret, draftId);
       if ('error' in g) throw new Error(g.error);
       setGen(g);
+      setCaption(g.caption);
       setStage('preview');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
@@ -113,6 +118,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       const g = await generateAction(secret, id, note);
       if ('error' in g) throw new Error(g.error);
       setGen(g);
+      setCaption(g.caption); // „Wygeneruj inaczej" świadomie zastępuje tekst — trener jest o tym uprzedzony pod polem podpowiedzi
       setStage('preview');
     } catch (err) {
       // Bez try/catch odrzucenie na poziomie transportu (offline, 500, deploy w trakcie) zostawiało trenera
@@ -151,7 +157,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
             {error}
           </div>
         )}
-        <Preview gen={gen} onRegenerate={onRegenerate} onFinish={onFinish} onBack={() => setStage('form')} />
+        <Preview gen={gen} caption={caption} onCaptionChange={setCaption} onRegenerate={onRegenerate} onFinish={onFinish} onBack={() => setStage('form')} />
       </main>
     );
   return (

@@ -25,6 +25,10 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
   await page.getByRole('button', { name: 'Wygeneruj inaczej' }).click();
   await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
   await page.getByLabel('Tekst posta').fill('Wygrana 24 : 18 z Sokołem Gdańsk. Dziękujemy za doping.');
+  // Ręczna poprawka przeżywa objazd przez formularz (UAT D-03): tekst mieszka w NewPostClient, nie w Preview.
+  await page.getByRole('button', { name: 'Popraw dane' }).click();
+  await page.getByRole('button', { name: 'Wróć do podglądu' }).click();
+  expect(await page.getByLabel('Tekst posta').inputValue()).toBe('Wygrana 24 : 18 z Sokołem Gdańsk. Dziękujemy za doping.');
   await page.getByRole('button', { name: 'Gotowe' }).click();
 
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
