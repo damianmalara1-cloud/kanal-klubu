@@ -7,7 +7,39 @@ const opt = str.transform((s) => (s === '' || s === 'cały klub' ? null : s)).nu
 const resultOpt = str.max(40).transform((s) => (s === '' ? null : s)).nullable().default(null);
 // Opcjonalny tekst z limitem długości, bez kolapsu „cały klub" (pole opisowe, nie selektor drużyny) — używane w `sukces.details`.
 const textOpt = (max: number) => str.max(max).transform((s) => (s === '' ? null : s)).nullable().default(null);
-const num = z.coerce.number().int().min(0).max(199);
+const SCORE_MIN = 0, SCORE_MAX = 199;
+const num = z.coerce.number().int().min(SCORE_MIN).max(SCORE_MAX);
+
+/** Etykiety pól formularza po polsku — jedyne źródło dla komunikatów walidacji serwera (`lib/errors.ts`).
+ * Trener nie ma słownika `scoreHome` → „Bramki UKS Banino"; nazwa techniczna w komunikacie każe mu szukać
+ * pola, którego na ekranie nie ma. Klucz = pierwszy segment ścieżki `ZodIssue` (`names.0` → `names`). */
+export const FIELD_LABEL: Record<string, string> = {
+  team: 'Drużyna',
+  opponent: 'Rywal',
+  scoreHome: 'Bramki UKS Banino',
+  scoreAway: 'Bramki rywala',
+  venue: 'Gdzie graliście',
+  venueCity: 'Miejscowość',
+  notes: 'Co warto powiedzieć',
+  name: 'Nazwa turnieju',
+  place: 'Miejsce',
+  result: 'Zajęte miejsce / wynik',
+  names: 'Imię i nazwisko',
+  kind: 'Co się wydarzyło',
+  details: 'Szczegóły',
+  title: 'Tytuł',
+  body: 'Treść',
+  date: 'Data',
+  time: 'Godzina',
+};
+
+/** Podpowiedź dopisywana do etykiety przy wartości spoza zakresu. Dla liczb pojedynczy `ZodIssue` niesie
+ * tylko jedną granicę (`too_big` → `maximum`), a trenerowi trzeba pokazać cały przedział — dlatego zakres
+ * bramek stoi tu, wyliczony z tych samych stałych co schemat. Limity długości tekstu biorą się z issue. */
+export const FIELD_HINT: Record<string, string> = {
+  scoreHome: `${SCORE_MIN}–${SCORE_MAX}`,
+  scoreAway: `${SCORE_MIN}–${SCORE_MAX}`,
+};
 
 const mecz = z.object({
   // max 48: rezerwa na skalowanie czcionki w kreacji, żeby drużyny nie wjeżdżały w pas partnerów (1180–1350 px)
