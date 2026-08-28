@@ -52,7 +52,7 @@ export function PhotoPicker({
       </label>
       <input ref={input} id="photos" type="file" accept="image/*" multiple onChange={(e) => add(e.target.files)} aria-label="Dodaj zdjęcia" />
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-        Wrzucaj tylko zdjęcia osób ze zgodą wizerunkową. Gwiazdka = zdjęcie na planszę.
+        Wrzucaj tylko zdjęcia osób ze zgodą wizerunkową. Kliknij zdjęcie, żeby wybrać je na planszę.
       </p>
       {errors.length > 0 && (
         <p className="error" role="alert">

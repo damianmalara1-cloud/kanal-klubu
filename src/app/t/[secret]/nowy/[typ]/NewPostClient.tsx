@@ -37,10 +37,12 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
 
   // Draft po stronie serwera odzwierciedla dane z chwili wygenerowania — każda zmiana PO utworzeniu draftu
   // (id !== null) unieważnia go, żeby kolejne „Wygeneruj post" stworzyło świeży draft z aktualnymi danymi
-  // zamiast generować z przestarzałych (plan tego nie przewidywał — poprawka z task-16, ruling 4).
+  // zamiast generować z przestarzałych (plan tego nie przewidywał — poprawka z task-16, ruling 4). Kasujemy
+  // też `gen`, żeby przycisk wrócił do „Wygeneruj post" (patrz `onGenerate` niżej — ruling z review Task 16).
   function invalidateDraft() {
     setId(null);
     setUploadedPaths([]);
+    setGen(null);
   }
   const set = (k: string, v: string) => {
     setValues((s) => ({ ...s, [k]: v }));
@@ -58,6 +60,12 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
   async function onGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (id && gen) {
+      // Draft niezmieniony od ostatniej udanej generacji (powrót z „Popraw dane" bez edycji) — samo
+      // przejście do podglądu, bez wywołania serwera i bez zużywania regeneracji (review Task 16, Minor #6).
+      setStage('preview');
+      return;
+    }
     if (!author) {
       setError('Wróć i wybierz swoje imię.');
       return;
@@ -101,24 +109,29 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
     if (!id) return;
     setError(null);
     setStage('generating');
-    const g = await generateAction(secret, id, note);
-    if ('error' in g) {
-      setError(g.error);
+    try {
+      const g = await generateAction(secret, id, note);
+      if ('error' in g) throw new Error(g.error);
+      setGen(g);
       setStage('preview');
-      return;
+    } catch (err) {
+      // Bez try/catch odrzucenie na poziomie transportu (offline, 500, deploy w trakcie) zostawiało trenera
+      // na „Generuję…" bez wyjścia poza przeładowaniem strony (review Task 16, Important #2).
+      setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
+      setStage('preview');
     }
-    setGen(g);
-    setStage('preview');
   }
   async function onFinish(caption: string) {
     if (!id) return;
     setError(null);
-    const r = await finishAction(secret, id, caption);
-    if ('error' in r) {
-      setError(r.error);
-      return;
+    try {
+      const r = await finishAction(secret, id, caption);
+      if ('error' in r) throw new Error(r.error);
+      router.push(`/t/${secret}/post/${r.id}`); // ekran „Gotowe” (Task 18): kopiuj tekst, pobierz planszę
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
+      setStage('preview');
     }
-    router.push(`/t/${secret}/post/${r.id}`); // ekran „Gotowe” (Task 18): kopiuj tekst, pobierz planszę
   }
   if (stage === 'generating')
     return (
@@ -157,7 +170,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
         <PhotoPicker photos={photos} onChange={onPhotosChange} heroIndex={hero} onHero={onHeroChange} />
         <div className="stack" style={{ marginTop: 20 }}>
           <button className="btn btn-primary" type="submit">
-            Wygeneruj post
+            {id && gen ? 'Wróć do podglądu' : 'Wygeneruj post'}
           </button>
         </div>
       </form>
