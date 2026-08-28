@@ -1,5 +1,6 @@
 import { getConfig } from '@/config';
 import { purge } from '@/workflow/purge';
+import { log } from '@/lib/log';
 export const maxDuration = 60;
 
 /** Cron dzienny (Vercel Cron → `Authorization: Bearer <CRON_SECRET>`). W trybie mock (`MOCK_EXTERNAL=true`,
@@ -8,7 +9,13 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
   const c = getConfig();
   if (!c.mockExternal && (!c.cronSecret || req.headers.get('authorization') !== `Bearer ${c.cronSecret}`)) {
+    // Bez tego wpisu odrzucony cron jest w logu Vercela nie do odróżnienia od crona, który w ogóle nie
+    // przyszedł. Logujemy TYLKO flagę, czy sekret jest ustawiony po stronie serwera — nigdy wartości
+    // (ani tej z configu, ani tej z nagłówka).
+    log.error('cron: unauthorized', { hasSecret: !!c.cronSecret });
     return new Response('unauthorized', { status: 401 });
   }
-  return Response.json(await purge());
+  const result = await purge();
+  log.info('purge', result);
+  return Response.json(result);
 }

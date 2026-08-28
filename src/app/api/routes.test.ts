@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { testConfig, resetAdapters } from '@/test/helpers';
 const cfg = vi.hoisted(() => ({ mockExternal: true, cronSecret: 'cron' }));
 vi.mock('@/config', () => ({ getConfig: () => testConfig({ mockExternal: cfg.mockExternal, coachLinkSecret: 'abcdefghijklmnop', cronSecret: cfg.cronSecret }) }));
@@ -10,12 +10,14 @@ import { finish } from '@/workflow/finish';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { purge } from '@/workflow/purge';
+import { log } from '@/lib/log';
 import { GET as fileGet } from './file/[...path]/route';
 import { GET as downloadGet } from './download/[id]/[what]/route';
 import { GET as cronGet } from './cron/purge/route';
 
 const S = 'abcdefghijklmnop';
 beforeEach(() => { resetAdapters(); cfg.mockExternal = true; cfg.cronSecret = 'cron'; });
+afterEach(() => vi.restoreAllMocks());
 async function readyPost() {
   const d = await createDraft({ author: 'Ania', type: 'mecz', ip: null, form: { team: 'młodziczki (2011+)', opponent: 'Sokół', scoreHome: 24, scoreAway: 18, venue: 'dom' } });
   const img = await sharp({ create: { width: 20, height: 20, channels: 3, background: '#333' } }).jpeg().toBuffer();
@@ -72,28 +74,41 @@ describe('file (mock)', () => {
 });
 
 describe('cron', () => {
-  it('poza mockiem bez Bearer 401; z Bearer 200 + wynik', async () => {
+  it('poza mockiem bez Bearer 401 (zalogowany); z Bearer 200 + wynik (zalogowany)', async () => {
+    // Cichy 401 z crona wygląda w logu Vercela identycznie jak brak wywołania — operator nie ma
+    // jak odróżnić „cron nie przyszedł" od „cron przyszedł ze złym sekretem". Wartość sekretu
+    // nigdy nie trafia do logu, tylko flaga, czy w ogóle jest ustawiony.
+    const errSpy = vi.spyOn(log, 'error').mockImplementation(() => {});
+    const infoSpy = vi.spyOn(log, 'info').mockImplementation(() => {});
     cfg.mockExternal = false;
+    cfg.cronSecret = 'tajny-sekret-crona';
     expect((await cronGet(new Request('http://x/api/cron/purge'))).status).toBe(401);
+    expect(errSpy).toHaveBeenCalledWith('cron: unauthorized', { hasSecret: true });
+    expect(JSON.stringify(errSpy.mock.calls)).not.toContain('tajny-sekret-crona');
     cfg.mockExternal = true;
     const d = await createDraft({ author: 'Ania', type: 'ogloszenie', ip: null, form: { title: 'a', body: 'b' } });
     await getRepo().update(d.id, { purgeAfter: '2000-01-01T00:00:00.000Z' });
-    const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer cron' } }));
+    const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer tajny-sekret-crona' } }));
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ purged: 0, deletedDrafts: 1, failed: 0 });
+    expect(infoSpy).toHaveBeenCalledWith('purge', { purged: 0, deletedDrafts: 1, failed: 0 });
   });
   it('poza mockiem zły Bearer → 401', async () => {
+    vi.spyOn(log, 'error').mockImplementation(() => {});
     cfg.mockExternal = false;
     const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer zly' } }));
     expect(r.status).toBe(401);
   });
-  it('poza mockiem pusty CRON_SECRET → 401 nawet z Bearerem', async () => {
+  it('poza mockiem pusty CRON_SECRET → 401 nawet z Bearerem, log z hasSecret: false', async () => {
+    const errSpy = vi.spyOn(log, 'error').mockImplementation(() => {});
     cfg.mockExternal = false;
     cfg.cronSecret = '';
     const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer cokolwiek' } }));
     expect(r.status).toBe(401);
+    expect(errSpy).toHaveBeenCalledWith('cron: unauthorized', { hasSecret: false });
   });
   it('w trybie mock brak nagłówka Authorization nadal 200 (bypass izolowany od gałęzi Bearer)', async () => {
+    vi.spyOn(log, 'info').mockImplementation(() => {}); // realny log.info z udanego purge — tłumimy, żeby output testów był czysty
     cfg.mockExternal = true;
     const r = await cronGet(new Request('http://x/api/cron/purge'));
     expect(r.status).toBe(200);

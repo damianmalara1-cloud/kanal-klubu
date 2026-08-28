@@ -60,6 +60,15 @@ MOCK_EXTERNAL=false
 
 Vercel (projekt `uks-kanal-klubu`) + Supabase (projekt `uks-kanal-klubu`, region EU). Deploy: `vercel --prod`. Migracje: `npx supabase db push` (`supabase/migrations/0001_posts.sql` — tabela `posts`, 20 kolumn, bucket `posts` prywatny). Cron: `/api/cron/purge` codziennie o 03:00 UTC (`vercel.json`), Vercel dołącza `Authorization: Bearer <CRON_SECRET>` sam.
 
+Po `vercel --prod` sprawdź crona ręcznie — nie czekaj do 03:00, żeby się dowiedzieć, że `CRON_SECRET` nie zgadza się z tym w Vercelu:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/purge
+# → {"purged":0,"deletedDrafts":0,"failed":0}
+```
+
+`failed > 0` = któryś post nie dał się przeczyścić (szczegóły w `vercel logs`, wpis `purge` z `id`). Odpowiedź `unauthorized` (401) = zły albo brakujący sekret; w logu zostaje wtedy wpis `cron: unauthorized` z `hasSecret` (samej wartości sekretu appka nigdy nie loguje).
+
 ## Jak…
 
 - **dodać trenera:** `vercel env` → `COACH_NAMES` (po przecinku) → `vercel --prod`.
