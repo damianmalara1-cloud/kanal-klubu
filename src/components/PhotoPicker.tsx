@@ -36,17 +36,24 @@ export function PhotoPicker({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  // Zmniejszanie 5 MB zdjęcia trwa ~2 s bez żadnego znaku życia — wyglądało, jakby wybór pliku nic nie zrobił (UAT D-12).
+  const [busy, setBusy] = useState(false);
 
   async function add(files: FileList | null) {
     if (!files) return;
-    const { photos: next, errors: errs } = await processFiles(Array.from(files), photos, shrinkImage, {
-      max,
-      maxBytes: MAX_UPLOAD_BYTES,
-      makeUrl: URL.createObjectURL,
-    });
-    setErrors(errs);
-    onChange(next);
-    if (input.current) input.current.value = '';
+    setBusy(true);
+    try {
+      const { photos: next, errors: errs } = await processFiles(Array.from(files), photos, shrinkImage, {
+        max,
+        maxBytes: MAX_UPLOAD_BYTES,
+        makeUrl: URL.createObjectURL,
+      });
+      setErrors(errs);
+      onChange(next);
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = '';
+    }
   }
 
   function remove(i: number) {
@@ -68,7 +75,12 @@ export function PhotoPicker({
       <label htmlFor="photos">
         Zdjęcia ({photos.length}/{max})
       </label>
-      <input ref={input} id="photos" type="file" accept="image/*" multiple onChange={(e) => add(e.target.files)} aria-label="Dodaj zdjęcia" />
+      <input ref={input} id="photos" type="file" accept="image/*" multiple disabled={busy} onChange={(e) => add(e.target.files)} aria-label="Dodaj zdjęcia" />
+      {busy && (
+        <p className="muted" style={{ fontSize: 13, margin: 0 }} role="status">
+          Przetwarzam zdjęcia…
+        </p>
+      )}
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>
         Wrzucaj tylko zdjęcia osób ze zgodą wizerunkową. Kliknij zdjęcie, żeby wybrać je na planszę.
       </p>
