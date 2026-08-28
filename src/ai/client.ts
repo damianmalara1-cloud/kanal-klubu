@@ -6,17 +6,20 @@ const MOCK_OUT = JSON.stringify({
   headline: 'WYGRANA', kicker: 'Liga wojewódzka · młodziczki',
 });
 
-export async function callModel(system: string, user: string): Promise<string> {
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+export async function callModel(system: string, user: string, opts?: { timeoutMs?: number }): Promise<string> {
   const c = getConfig();
   if (c.aiMock) return MOCK_OUT;
-  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 40_000);
+  const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: ctrl.signal,
       headers: { Authorization: `Bearer ${c.openrouterApiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': c.appUrl, 'X-Title': 'Kanal Klubu UKS Banino' },
       body: JSON.stringify({ model: c.aiModel, temperature: 0.7, max_tokens: 1200, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
     });
-    if (!res.ok) { const body = await res.text(); log.error('openrouter', { status: res.status, body: body.slice(0, 300) }); throw new Error(`OpenRouter ${res.status}`); }
+    if (!res.ok) { const body = await res.text(); log.error('openrouter', { status: res.status, body: body.slice(0, 300) }); throw new Error(`OpenRouter ${res.status}: ${body.slice(0, 300)}`); }
     const json = await res.json() as { choices?: { message?: { content?: string } }[] };
     const text = json.choices?.[0]?.message?.content; if (!text) throw new Error('OpenRouter: pusta odpowiedź');
     return text;
