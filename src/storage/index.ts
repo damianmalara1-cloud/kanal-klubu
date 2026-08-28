@@ -1,3 +1,4 @@
+import 'server-only';
 import { getConfig } from '@/config';
 import { MemoryStorage } from './memory';
 import { SupabaseStorage } from './supabase';

@@ -1,3 +1,4 @@
+import 'server-only';
 import { getConfig } from '@/config';
 import { MemoryRepo } from './memory';
 import { SupabaseRepo } from './supabase';

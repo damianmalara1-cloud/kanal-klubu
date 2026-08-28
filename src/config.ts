@@ -1,3 +1,4 @@
+import 'server-only';
 import { z } from 'zod';
 
 const bool = z.enum(['true', 'false', '']).optional().transform((v) => v === 'true');
