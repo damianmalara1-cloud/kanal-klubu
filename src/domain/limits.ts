@@ -9,3 +9,7 @@ export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
  * rozpakowaniu zająć setki MB RAM-u funkcji. 50 Mpx to z zapasem powyżej tego, co robią telefony
  * (48 Mpx = 8000×6000 w trybie „pełna rozdzielczość"), a poniżej domyślnych ~268 Mpx sharpa. */
 export const MAX_INPUT_PIXELS = 50_000_000;
+/** Minimalna długość tekstu posta. Ten sam wzorzec co wyżej: `Preview` ('use client') pokazuje trenerowi
+ * dokładnie ten próg, który wyegzekwuje `workflow/finish` — inaczej szary przycisk „Gotowe" tłumaczyłby się
+ * liczbą wziętą z sufitu. `workflow/finish.ts` re-eksportuje stałą. */
+export const MIN_CAPTION = 20;

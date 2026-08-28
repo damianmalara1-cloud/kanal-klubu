@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { MIN_CAPTION } from '@/domain/limits';
 export type Generated = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean };
 
 /** Tekst posta (`caption`) NIE jest stanem tego komponentu — trzyma go `NewPostClient`, bo „Popraw dane"
@@ -27,7 +28,8 @@ export function Preview({
       {gen.creativeUrl && <img className="creative" src={gen.creativeUrl} alt="Plansza" width={1080} height={1350} />}
       <div className="field"><label htmlFor="caption">Tekst posta</label><textarea id="caption" aria-label="Tekst posta" value={caption} onChange={(e) => onCaptionChange(e.target.value)} style={{ minHeight: 260 }} /></div>
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>Hashtagi i informację o programie dokładamy automatycznie na następnym ekranie.</p>
-      <button className="btn btn-primary" type="button" disabled={busy || caption.trim().length < 20} onClick={async () => { setBusy(true); try { await onFinish(caption); } finally { setBusy(false); } }}>Gotowe</button>
+      <button className="btn btn-primary" type="button" disabled={busy || caption.trim().length < MIN_CAPTION} onClick={async () => { setBusy(true); try { await onFinish(caption); } finally { setBusy(false); } }}>Gotowe</button>
+      {caption.trim().length < MIN_CAPTION && <p className="muted" style={{ fontSize: 13, margin: 0 }}>Tekst musi mieć co najmniej {MIN_CAPTION} znaków</p>}
       <div className="rule" />
       <div className="field"><label htmlFor="note">Podpowiedź (opcjonalnie)</label><input id="note" aria-label="Podpowiedź do wygenerowania" value={note} onChange={(e) => setNote(e.target.value)} placeholder="np. krócej, wspomnij o bramkarce" /></div>
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>„Wygeneruj inaczej" zastąpi cały tekst — Twoje poprawki znikną.</p>

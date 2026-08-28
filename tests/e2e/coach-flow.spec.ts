@@ -89,7 +89,13 @@ test('trener: drużyna spoza listy, powrót po odświeżeniu, usuwanie zdjęcia'
   await page.getByRole('button', { name: 'Wygeneruj post' }).click();
   await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
 
+  // D-11: za krótki tekst blokuje „Gotowe", ale mówi dlaczego.
+  await page.getByLabel('Tekst posta').fill('krótko');
+  await expect(page.getByRole('button', { name: 'Gotowe' })).toBeDisabled();
+  await expect(page.getByText('Tekst musi mieć co najmniej 20 znaków')).toBeVisible();
+
   await page.getByLabel('Tekst posta').fill('Wygrana 30 : 21 z Sokołem Gdańsk. Brawo oldboye.');
+  await expect(page.getByText('Tekst musi mieć co najmniej 20 znaków')).toHaveCount(0);
   await page.getByRole('button', { name: 'Gotowe' }).click();
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Mecz · UKS Banino 30 : 21 Sokół Gdańsk · oldboye/)).toBeVisible();

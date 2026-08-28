@@ -1,11 +1,12 @@
 import { getConfig } from '@/config';
 import { getRepo } from '@/db';
 import { cleanCaption, finalizeCaption } from '@/ai/postprocess';
+import { MIN_CAPTION } from '@/domain/limits';
 import type { Post } from '@/domain/types';
 import { nowIso, plusDays } from '@/lib/dates';
 import { AppError } from '@/lib/errors';
 
-export const MIN_CAPTION = 20;
+export { MIN_CAPTION };
 export const DONE_RETENTION_DAYS = 7; // po decyzji trenera pliki żyją 7 dni (dane dzieci nie leżą bezterminowo)
 
 /** Trener kończy post: zapisujemy oczyszczony tekst, status done, termin kasowania plików. */
