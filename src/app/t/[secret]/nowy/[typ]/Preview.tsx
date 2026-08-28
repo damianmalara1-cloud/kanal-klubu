@@ -32,7 +32,7 @@ export function Preview({
       {caption.trim().length < MIN_CAPTION && <p className="muted" style={{ fontSize: 13, margin: 0 }}>Tekst musi mieć co najmniej {MIN_CAPTION} znaków</p>}
       <div className="rule" />
       <div className="field"><label htmlFor="note">Podpowiedź (opcjonalnie)</label><input id="note" aria-label="Podpowiedź do wygenerowania" value={note} onChange={(e) => setNote(e.target.value)} placeholder="np. krócej, wspomnij o bramkarce" /></div>
-      <p className="muted" style={{ fontSize: 13, margin: 0 }}>„Wygeneruj inaczej" zastąpi cały tekst — Twoje poprawki znikną.</p>
+      <p className="muted" style={{ fontSize: 13, margin: 0 }}>„Wygeneruj inaczej” zastąpi cały tekst — Twoje poprawki znikną.</p>
       <button className="btn" type="button" disabled={!gen.canRegen} onClick={() => onRegenerate(note)}>{gen.canRegen ? 'Wygeneruj inaczej' : 'Limit prób — popraw tekst ręcznie'}</button>
       <button className="btn" type="button" onClick={onBack}>Popraw dane</button>
     </div>
