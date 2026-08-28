@@ -12,7 +12,7 @@ h1 { font: 400 40px/0.92 var(--font-display); letter-spacing: -0.01em; text-tran
 h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .kicker { font: 600 12px/1 var(--font-text); letter-spacing: .14em; text-transform: uppercase; color: var(--text-accent); }
 /* Cele dotknięcia ≥44 px w pionie (UAT D-09): link powrotu miał 14 px wysokości i siedzi przy krawędzi ekranu. */
-.kicker a { display: inline-block; padding: 12px 0; }
+.kicker a { display: inline-block; padding: 16px 0; }
 .muted { color: var(--text-muted); }
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 20px; width: 100%; font: 700 14px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; border: 2px solid var(--border-strong); background: var(--surface-card); color: var(--text-primary); border-radius: var(--radius-1); cursor: pointer; text-decoration: none; }
 .btn-primary { background: var(--accent); border-color: transparent; color: var(--text-on-accent); }
@@ -46,7 +46,7 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .status { font: 600 11px/1 var(--font-text); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border: 1px solid var(--border-strong); white-space: nowrap; align-self: flex-start; }
 .list { list-style: none; padding: 0; margin: 0; }
 .list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-hairline); }
-.list li a { display: block; padding: 10px 0; color: var(--text-primary); text-decoration: none; }
+.list li a { display: block; padding: 11px 0; color: var(--text-primary); text-decoration: none; }
 .creative { width: 100%; height: auto; display: block; border: 1px solid var(--border-hairline); }
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; }
