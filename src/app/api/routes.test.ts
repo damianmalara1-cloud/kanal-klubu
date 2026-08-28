@@ -40,6 +40,14 @@ describe('download', () => {
     expect((await downloadGet(new Request(`http://x/api/download/${p.id}/zdjecie-9?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'zdjecie-9' }) })).status).toBe(404);
     expect((await downloadGet(new Request(`http://x/api/download/${p.id}/cokolwiek?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'cokolwiek' }) })).status).toBe(404);
   });
+  it('data w nazwie pliku jest datą polską, nie UTC', async () => {
+    // 14.03 o 23:30 UTC to w Polsce już 15.03 (CET, zimą +1). Trener widzi w telefonie 15 marca i tak
+    // szuka pliku — nazwa musi się z tym zgadzać.
+    const p = await readyPost();
+    await getRepo().update(p.id, { createdAt: '2026-03-14T23:30:00.000Z' });
+    const r = await downloadGet(new Request(`http://x/api/download/${p.id}/plansza?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'plansza' }) });
+    expect(r.headers.get('content-disposition')).toContain('2026-03-15');
+  });
   it('szkic (niegotowy) → 404', async () => {
     const d = await createDraft({ author: 'Ania', type: 'ogloszenie', ip: null, form: { title: 'a', body: 'b' } });
     expect((await downloadGet(new Request(`http://x/api/download/${d.id}/plansza?secret=${S}`), { params: Promise.resolve({ id: d.id, what: 'plansza' }) })).status).toBe(404);

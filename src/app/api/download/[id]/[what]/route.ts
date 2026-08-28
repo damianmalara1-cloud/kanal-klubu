@@ -3,6 +3,7 @@ import { getStorage } from '@/storage';
 import { isValidSecret } from '@/lib/access';
 import { errMessage } from '@/lib/errors';
 import { log } from '@/lib/log';
+import { dayPl } from '@/lib/dates';
 export const maxDuration = 30;
 
 const NOT_FOUND = () => new Response('not found', { status: 404 });
@@ -27,7 +28,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string; wha
     if (!path) return NOT_FOUND();
     const buf = await getStorage().get(path);
     if (!buf) return NOT_FOUND();
-    const day = post.createdAt.slice(0, 10);
+    const day = dayPl(post.createdAt);
     return new Response(new Uint8Array(buf), {
       headers: {
         'Content-Type': type,
