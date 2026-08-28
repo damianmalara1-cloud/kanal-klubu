@@ -20,7 +20,10 @@ type Stage = 'form' | 'generating' | 'preview';
  * się zablokował albo iOS ubił kartę w tle; do tej pory trener wracał do pustego formularza, a szkicu nie
  * było jak odzyskać (UAT D-02). Blobów zdjęć odtworzyć się nie da, więc trzymamy tylko ŚCIEŻKI już wgranych
  * (szkic na serwerze ma je przy sobie) — dzięki temu ponowne „Wygeneruj post" dokańcza tamten szkic. */
-type SavedDraft = { id: string | null; uploadedPaths: string[]; values: Record<string, string>; hero: number; savedAt: number };
+// `hero` świadomie POZA szkicem: bloby zdjęć nie wracają po odświeżeniu, więc odtworzony numer kafla
+// wskazywałby na zdjęcie, którego nie ma — odznaczony kafel w interfejsie, a na serwerze cicho inna
+// plansza niż ta, którą trener widzi.
+type SavedDraft = { id: string | null; uploadedPaths: string[]; values: Record<string, string>; savedAt: number };
 const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // tyle samo, co `purgeAfter` szkicu na serwerze
 
 export function NewPostClient({ secret, type, teams }: { secret: string; type: PostType; teams: string[] }) {
@@ -55,7 +58,6 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
         return;
       }
       setValues(d.values);
-      setHero(typeof d.hero === 'number' ? d.hero : 0);
       setUploadedPaths(Array.isArray(d.uploadedPaths) ? d.uploadedPaths : []);
       setId(typeof d.id === 'string' ? d.id : null);
     } catch {
@@ -70,12 +72,12 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       return;
     }
     try {
-      const d: SavedDraft = { id, uploadedPaths, values, hero, savedAt: Date.now() };
+      const d: SavedDraft = { id, uploadedPaths, values, savedAt: Date.now() };
       localStorage.setItem(draftKey, JSON.stringify(d));
     } catch {
       /* localStorage niedostępny (tryb prywatny) */
     }
-  }, [draftKey, id, uploadedPaths, values, hero]);
+  }, [draftKey, id, uploadedPaths, values]);
   const Fields = FIELDS[type];
 
   // Draft po stronie serwera odzwierciedla dane z chwili wygenerowania — każda zmiana PO utworzeniu draftu
