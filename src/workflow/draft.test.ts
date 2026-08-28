@@ -72,6 +72,16 @@ describe('attachPhoto', () => {
     await expect(attachPhoto(d.id, tooBig)).rejects.toMatchObject({ status: 413 });
   });
 
+  it('odrzuca bombę dekompresyjną — mały plik, ogromna rozdzielczość', async () => {
+    // 8000×8000 = 64 Mpx jednolitego koloru → JPEG waży ~0,4 MB (przechodzi limit 4 MB), ale rozpakowanie
+    // to ~192 MB w RAM funkcji. Domyślny limit sharpa (~268 Mpx) jest na to za luźny.
+    const d = await createDraft(mecz(null));
+    const bomb = await sharp({ create: { width: 8000, height: 8000, channels: 3, background: '#333' } }).jpeg().toBuffer();
+    expect(bomb.length).toBeLessThan(MAX_UPLOAD_BYTES);
+    await expect(attachPhoto(d.id, bomb)).rejects.toThrow(/pikseli/);
+    await expect(attachPhoto(d.id, bomb)).rejects.toMatchObject({ status: 400 });
+  });
+
   it('równoległe attachPhoto na tym samym poście nie nadpisują się nawzajem w storage', async () => {
     const d = await createDraft(mecz(null));
     const small = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#888' } }).jpeg().toBuffer();

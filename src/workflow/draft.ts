@@ -4,7 +4,7 @@ import { getConfig } from '@/config';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { formTeam, parseForm } from '@/domain/forms';
-import { MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
+import { MAX_INPUT_PIXELS, MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
 import { POST_TYPES, type Post, type PostType } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
@@ -54,12 +54,17 @@ export async function attachPhoto(id: string, file: Buffer): Promise<{ path: str
   if (file.length > MAX_UPLOAD_BYTES) throw new AppError('Zdjęcie jest za duże (max 4 MB)', 413);
   let jpg: Buffer;
   try {
-    jpg = await sharp(file)
+    jpg = await sharp(file, { limitInputPixels: MAX_INPUT_PIXELS })
       .rotate() // koryguje orientację EXIF przed resize, żeby zapisany plik nie zależał od tagu, który dalej i tak wycinamy
       .resize({ width: 2048, height: 2048, fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toBuffer();
-  } catch {
+  } catch (e) {
+    // Bomba dekompresyjna ma inną przyczynę niż zepsuty plik — trener ma wiedzieć, że to kwestia
+    // rozdzielczości, a nie tego, że wybrał zły plik.
+    if (/pixel limit/i.test(e instanceof Error ? e.message : '')) {
+      throw new AppError('Zdjęcie ma za dużo pikseli — zmniejsz je i spróbuj jeszcze raz', 400);
+    }
     throw new AppError('To nie jest obsługiwane zdjęcie', 400);
   }
   const suffix = randomBytes(3).toString('hex');
