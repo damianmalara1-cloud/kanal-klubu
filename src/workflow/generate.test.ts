@@ -13,6 +13,7 @@ vi.mock('@/config', () => ({
 vi.mock('@/creative', () => ({ renderCreative: vi.fn(async () => Buffer.from('PNG')) }));
 
 import { getRepo } from '@/db';
+import { isDraftGoneMessage } from '@/domain/messages';
 import { renderCreative } from '@/creative';
 import { createDraft } from './draft';
 import { generate, MAX_REGEN } from './generate';
@@ -56,6 +57,19 @@ describe('generate', () => {
     await getRepo().update(d.id, { status: 'done' });
     await expect(generate(d.id, 'x')).rejects.toThrow(/Post jest już zakończony/);
     await expect(generate(d.id, 'x')).rejects.toMatchObject({ status: 409 });
+  });
+
+  // Kontrakt dla klienta (`NewPostClient.handleError`): po TYCH komunikatach trzymane w przeglądarce `id`
+  // jest martwe i musi zostać unieważnione. Test pilnuje, żeby zmiana tekstu w workflow nie rozjechała się
+  // po cichu z listą w `@/domain/messages` — klient rozpoznaje błąd po treści komunikatu.
+  it('komunikaty o nieistniejącym/zamkniętym poście są rozpoznawane przez isDraftGoneMessage', async () => {
+    const d = await draft();
+    await expect(generate('00000000-0000-4000-8000-000000000000')).rejects.toSatisfy(
+      (e: Error) => isDraftGoneMessage(e.message),
+    );
+    await generate(d.id);
+    await getRepo().update(d.id, { status: 'done' });
+    await expect(generate(d.id, 'x')).rejects.toSatisfy((e: Error) => isDraftGoneMessage(e.message));
   });
 
   it('partnerBand: włączony gdy partnerInfoEnabled=true i drużyna w KLUB PRO, wyłączony przez globalny kill-switch', async () => {

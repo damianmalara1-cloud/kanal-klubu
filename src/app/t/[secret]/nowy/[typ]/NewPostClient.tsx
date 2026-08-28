@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { isDraftGoneMessage } from '@/domain/messages';
 import { TYPE_LABEL, type PostType } from '@/domain/types';
 import { PhotoPicker, type PickedPhoto } from '@/components/PhotoPicker';
 import { MeczFields } from '@/components/forms/MeczFields';
@@ -106,9 +107,22 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       setCaption(g.caption);
       setStage('preview');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
-      setStage('form');
+      handleError(err, 'form');
     }
+  }
+  /** Wspólna obsługa błędu z akcji: gdy serwer mówi, że posta już nie ma (wygasł, przeszedł w „done",
+   * został wyczyszczony), trzymane w kliencie `id` jest martwe — bez unieważnienia każda kolejna próba
+   * dobija się do tego samego nieistniejącego szkicu i trener nie ma jak wyjść poza przeładowaniem. */
+  function handleError(err: unknown, back: Stage) {
+    const msg = err instanceof Error ? err.message : 'Coś poszło nie tak';
+    if (isDraftGoneMessage(msg)) {
+      invalidateDraft();
+      setError(msg);
+      setStage('form');
+      return;
+    }
+    setError(msg);
+    setStage(back);
   }
   async function onRegenerate(note: string) {
     if (!id) return;
@@ -123,8 +137,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
     } catch (err) {
       // Bez try/catch odrzucenie na poziomie transportu (offline, 500, deploy w trakcie) zostawiało trenera
       // na „Generuję…" bez wyjścia poza przeładowaniem strony (review Task 16, Important #2).
-      setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
-      setStage('preview');
+      handleError(err, 'preview');
     }
   }
   async function onFinish(caption: string) {
@@ -135,8 +148,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       if ('error' in r) throw new Error(r.error);
       router.push(`/t/${secret}/post/${r.id}`); // ekran „Gotowe” (Task 18): kopiuj tekst, pobierz planszę
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Coś poszło nie tak');
-      setStage('preview');
+      handleError(err, 'preview');
     }
   }
   if (stage === 'generating')

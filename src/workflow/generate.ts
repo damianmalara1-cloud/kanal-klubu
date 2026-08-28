@@ -3,6 +3,7 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { generateCaption } from '@/ai/generate';
 import { renderCreative } from '@/creative';
+import { MSG_POST_DONE, MSG_POST_NOT_FOUND } from '@/domain/messages';
 import type { Post } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
@@ -12,7 +13,7 @@ export const MODEL_CALLS_PER_HOUR = 60;
 
 async function postOr404(id: string): Promise<Post> {
   const post = await getRepo().get(id);
-  if (!post) throw new AppError('Nie znaleziono', 404);
+  if (!post) throw new AppError(MSG_POST_NOT_FOUND, 404);
   return post;
 }
 
@@ -39,7 +40,7 @@ async function rerenderCreative(id: string): Promise<Post> {
 export async function generate(id: string, note?: string): Promise<Post> {
   const repo = getRepo();
   const post = await postOr404(id);
-  if (post.status !== 'draft') throw new AppError('Post jest już zakończony', 409);
+  if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
   const isRegen = post.captionAi !== null;
   if (isRegen && post.regenCount >= MAX_REGEN) {
     throw new AppError(`Limit ${MAX_REGEN} prób na zgłoszenie — popraw tekst ręcznie albo kliknij Gotowe`, 429);

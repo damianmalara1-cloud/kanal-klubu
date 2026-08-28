@@ -5,6 +5,7 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { formTeam, parseForm } from '@/domain/forms';
 import { MAX_INPUT_PIXELS, MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
+import { MSG_DRAFT_GONE } from '@/domain/messages';
 import { POST_TYPES, type Post, type PostType } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
@@ -39,7 +40,7 @@ export async function createDraft(input: { author: string; type: PostType; form:
 
 async function draftOr404(id: string): Promise<Post> {
   const post = await getRepo().get(id);
-  if (!post || post.status !== 'draft') throw new AppError('Post nie istnieje albo jest już zakończony', 404);
+  if (!post || post.status !== 'draft') throw new AppError(MSG_DRAFT_GONE, 404);
   return post;
 }
 
