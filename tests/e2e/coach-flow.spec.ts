@@ -60,10 +60,24 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
 });
 
 // Drugi, krótki przebieg: rzeczy, które trener robi POZA szczęśliwą ścieżką — poprawianie tego, co już wpisał.
-test('trener: usuwanie zdjęcia, drużyna spoza listy, powrót po odświeżeniu', async ({ page }) => {
+test('trener: drużyna spoza listy, powrót po odświeżeniu, usuwanie zdjęcia', async ({ page }) => {
   await page.goto(`/t/${SECRET}`);
   await page.getByRole('button', { name: 'Ania' }).click();
   await page.getByRole('link', { name: 'Mecz' }).click();
+
+  // C2/M-8: drużyna spoza listy — po wybraniu „inna" wolny tekst idzie jako `team` (spec §3.1).
+  await page.getByLabel('Drużyna', { exact: true }).selectOption({ label: 'inna' });
+  await page.getByLabel('Inna drużyna').fill('oldboye');
+  await page.getByLabel('Rywal', { exact: true }).fill('Sokół Gdańsk');
+  await page.getByLabel('Bramki UKS Banino').fill('30');
+  await page.getByLabel('Bramki rywala').fill('21');
+
+  // D-02: przerwana praca (odświeżenie, blokada telefonu) nie kasuje formularza.
+  await page.reload();
+  await expect(page.getByLabel('Inna drużyna')).toHaveValue('oldboye'); // tryb „inna" odtworzony z samej wartości
+  await expect(page.getByLabel('Rywal', { exact: true })).toHaveValue('Sokół Gdańsk');
+  await expect(page.getByLabel('Bramki UKS Banino')).toHaveValue('30');
+  await expect(page.getByLabel('Bramki rywala')).toHaveValue('21');
 
   // C1/D-01: dodane zdjęcie da się usunąć (bez tego zły plik blokował cały przepływ).
   await page.getByLabel('Dodaj zdjęcia').setInputFiles(['tests/e2e/fixtures/foto.jpg', 'tests/e2e/fixtures/foto.jpg']);
@@ -72,14 +86,9 @@ test('trener: usuwanie zdjęcia, drużyna spoza listy, powrót po odświeżeniu'
   await expect(page.getByText('Zdjęcia (1/10)')).toBeVisible();
   await expect(page.getByRole('button', { name: /Zdjęcie 2 na planszę/ })).toHaveCount(0);
 
-  // C2/M-8: drużyna spoza listy — po wybraniu „inna" wolny tekst idzie jako `team` (spec §3.1).
-  await page.getByLabel('Drużyna', { exact: true }).selectOption({ label: 'inna' });
-  await page.getByLabel('Inna drużyna').fill('oldboye');
-  await page.getByLabel('Rywal', { exact: true }).fill('Sokół Gdańsk');
-  await page.getByLabel('Bramki UKS Banino').fill('30');
-  await page.getByLabel('Bramki rywala').fill('21');
   await page.getByRole('button', { name: 'Wygeneruj post' }).click();
   await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
+
   await page.getByLabel('Tekst posta').fill('Wygrana 30 : 21 z Sokołem Gdańsk. Brawo oldboye.');
   await page.getByRole('button', { name: 'Gotowe' }).click();
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });

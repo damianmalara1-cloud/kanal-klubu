@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
-import { processFiles, removePhoto, type PickedPhoto } from './photoProcess';
+import { processFiles, removePhoto, uploadedPhotosPhrase, type PickedPhoto } from './photoProcess';
 
 export type { PickedPhoto };
 
@@ -23,12 +23,16 @@ export function PhotoPicker({
   heroIndex,
   onHero,
   max = MAX_PHOTOS,
+  restoredUploads = 0,
 }: {
   photos: PickedPhoto[];
   onChange: (p: PickedPhoto[]) => void;
   heroIndex: number;
   onHero: (i: number) => void;
   max?: number;
+  /** Zdjęcia wgrane w poprzednim podejściu (odtworzone z localStorage), których miniatur nie da się
+   * pokazać — blob żyje tylko w tamtej karcie. Zero = normalna sesja, nic nie dopisujemy. */
+  restoredUploads?: number;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -68,6 +72,11 @@ export function PhotoPicker({
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>
         Wrzucaj tylko zdjęcia osób ze zgodą wizerunkową. Kliknij zdjęcie, żeby wybrać je na planszę.
       </p>
+      {restoredUploads > 0 && (
+        <p className="muted" style={{ fontSize: 13, margin: 0 }} role="status">
+          {restoredUploads} {uploadedPhotosPhrase(restoredUploads)} z poprzedniej próby — dodanie nowych zaczyna post od nowa.
+        </p>
+      )}
       {errors.length > 0 && (
         <p className="error" role="alert">
           {errors.join('; ')}

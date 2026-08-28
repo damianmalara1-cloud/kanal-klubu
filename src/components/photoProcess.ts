@@ -52,3 +52,13 @@ export function removePhoto(photos: PickedPhoto[], hero: number, index: number):
   const nextHero = index === hero || next.length === 0 ? 0 : index < hero ? hero - 1 : hero;
   return { photos: next, hero: nextHero };
 }
+
+/** Polska odmiana zwrotu „N zdjęć już wgranych" — kafle z poprzedniej próby opisujemy zdaniem, a nie samym
+ * licznikiem, więc odmienia się i rzeczownik, i imiesłów (1 zdjęcie wgrane / 2 zdjęcia wgrane / 5 zdjęć wgranych). */
+export function uploadedPhotosPhrase(n: number): string {
+  const rest = n % 10;
+  const teen = n % 100;
+  if (n === 1) return 'zdjęcie już wgrane';
+  if (rest >= 2 && rest <= 4 && !(teen >= 12 && teen <= 14)) return 'zdjęcia już wgrane';
+  return 'zdjęć już wgranych';
+}

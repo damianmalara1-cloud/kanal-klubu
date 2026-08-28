@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isDraftGoneMessage } from '@/domain/messages';
 import { TYPE_LABEL, type PostType } from '@/domain/types';
@@ -16,6 +16,13 @@ import { toForm } from './toForm';
 const FIELDS = { mecz: MeczFields, turniej: TurniejFields, sukces: SukcesFields, ogloszenie: OgloszenieFields } as const;
 type Stage = 'form' | 'generating' | 'preview';
 
+/** Stan formularza przeżywający przeładowanie karty. Generacja trwa 10–20 s — tyle wystarczy, żeby telefon
+ * się zablokował albo iOS ubił kartę w tle; do tej pory trener wracał do pustego formularza, a szkicu nie
+ * było jak odzyskać (UAT D-02). Blobów zdjęć odtworzyć się nie da, więc trzymamy tylko ŚCIEŻKI już wgranych
+ * (szkic na serwerze ma je przy sobie) — dzięki temu ponowne „Wygeneruj post" dokańcza tamten szkic. */
+type SavedDraft = { id: string | null; uploadedPaths: string[]; values: Record<string, string>; hero: number; savedAt: number };
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // tyle samo, co `purgeAfter` szkicu na serwerze
+
 export function NewPostClient({ secret, type, teams }: { secret: string; type: PostType; teams: string[] }) {
   const router = useRouter();
   const [author, setAuthor] = useState('');
@@ -30,13 +37,41 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
   // Tekst posta mieszka tutaj, nie w `Preview` — „Popraw dane" odmontowuje podgląd, a ręczna poprawka
   // trenera ma przeżyć powrót do formularza (UAT D-03). Ustawiany przy KAŻDEJ nowej generacji.
   const [caption, setCaption] = useState('');
+  const draftKey = `kk-draft-${type}`;
+  // Pierwszy przebieg efektu zapisu pomijamy — poleciałby z domyślnymi wartościami z montażu i nadpisał
+  // dopiero co odczytany szkic (efekt odtwarzania zdąży już ustawić stan, ale zamknięcie nad `values` w tym
+  // przebiegu jest jeszcze sprzed odtworzenia).
+  const skipSave = useRef(true);
   useEffect(() => {
     try {
       setAuthor(localStorage.getItem('kk-author') ?? '');
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Partial<SavedDraft>;
+      if (typeof d.savedAt !== 'number' || Date.now() - d.savedAt > DRAFT_TTL_MS || !d.values) {
+        localStorage.removeItem(draftKey);
+        return;
+      }
+      setValues(d.values);
+      setHero(typeof d.hero === 'number' ? d.hero : 0);
+      setUploadedPaths(Array.isArray(d.uploadedPaths) ? d.uploadedPaths : []);
+      setId(typeof d.id === 'string' ? d.id : null);
     } catch {
       /* localStorage niedostępny (tryb prywatny) */
     }
-  }, []);
+  }, [draftKey]);
+  useEffect(() => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    try {
+      const d: SavedDraft = { id, uploadedPaths, values, hero, savedAt: Date.now() };
+      localStorage.setItem(draftKey, JSON.stringify(d));
+    } catch {
+      /* localStorage niedostępny (tryb prywatny) */
+    }
+  }, [draftKey, id, uploadedPaths, values, hero]);
   const Fields = FIELDS[type];
 
   // Draft po stronie serwera odzwierciedla dane z chwili wygenerowania — każda zmiana PO utworzeniu draftu
@@ -146,6 +181,11 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
     try {
       const r = await finishAction(secret, id, caption);
       if ('error' in r) throw new Error(r.error);
+      try {
+        localStorage.removeItem(draftKey); // post skończony — nie ma czego wznawiać
+      } catch {
+        /* localStorage niedostępny (tryb prywatny) */
+      }
       router.push(`/t/${secret}/post/${r.id}`); // ekran „Gotowe” (Task 18): kopiuj tekst, pobierz planszę
     } catch (err) {
       handleError(err, 'preview');
@@ -185,7 +225,15 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       )}
       <form onSubmit={onGenerate}>
         <Fields values={values} set={set} teams={teams} />
-        <PhotoPicker photos={photos} onChange={onPhotosChange} heroIndex={hero} onHero={onHeroChange} />
+        <PhotoPicker
+          photos={photos}
+          onChange={onPhotosChange}
+          heroIndex={hero}
+          onHero={onHeroChange}
+          // Linia o wgranych zdjęciach ma sens tylko wtedy, gdy nie ma ich lokalnie (po odtworzeniu z
+          // localStorage) — w normalnej sesji kafle mówią to samo, a zdanie byłoby nieprawdą.
+          restoredUploads={photos.length === 0 ? uploadedPaths.length : 0}
+        />
         <div className="stack" style={{ marginTop: 20 }}>
           <button className="btn btn-primary" type="submit">
             {id && gen ? 'Wróć do podglądu' : 'Wygeneruj post'}

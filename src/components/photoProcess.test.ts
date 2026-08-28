@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { processFiles, removePhoto, type PickedPhoto } from './photoProcess';
+import { processFiles, removePhoto, uploadedPhotosPhrase, type PickedPhoto } from './photoProcess';
 
 type FakeFile = { size: number; name: string };
 const file = (size: number, name = 'zdjecie.jpg'): FakeFile => ({ size, name });
@@ -108,5 +108,19 @@ describe('removePhoto', () => {
     const r = removePhoto(list, 2, 5);
     expect(r.photos).toEqual(list);
     expect(r.hero).toBe(2);
+  });
+});
+
+describe('uploadedPhotosPhrase', () => {
+  it('odmienia zwrot po liczbie', () => {
+    expect([1, 2, 4, 5, 10, 12, 22].map(uploadedPhotosPhrase)).toEqual([
+      'zdjęcie już wgrane',
+      'zdjęcia już wgrane',
+      'zdjęcia już wgrane',
+      'zdjęć już wgranych',
+      'zdjęć już wgranych',
+      'zdjęć już wgranych',
+      'zdjęcia już wgrane',
+    ]);
   });
 });
