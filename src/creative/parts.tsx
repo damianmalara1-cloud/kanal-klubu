@@ -63,9 +63,16 @@ export function RedBar({ width = 110, style }: { width?: number; style?: CSSProp
   return <div style={{ width, height: 12, background: RED, ...style }} />;
 }
 
-/** Zdjęcie od góry na pełną szerokość; dolna krawędź cięta białym klinem pod stałym kątem SLANT_DEG (opada w prawo; lewa krawędź zdjęcia kończy się o SLANT_DROP wyżej niż prawa, `height` = punkt najniższy). */
+/**
+ * Zdjęcie od góry na pełną szerokość; dolna krawędź cięta białym klinem pod stałym kątem SLANT_DEG.
+ * Kierunek zgodny z tokenami DS (`--slant-clip-down` / `--slant-skew: skewY(-10deg)`): linia cięcia
+ * opada w LEWO — lewa krawędź zdjęcia sięga pełnego `height` (punkt najniższy), prawa krawędź jest
+ * cięta o SLANT_DROP px wyżej. Klin to prostokąt zaczepiony w (0, height) i obrócony o `-SLANT_DEG`
+ * wokół tego rogu. Satori honoruje `transformOrigin` WYŁĄCZNIE jako słowo kluczowe (np. `'left top'`)
+ * — wartości `'0 0'` / `'0px 0px'` / `'0% 0%'` są po cichu ignorowane i obrót leci wokół środka.
+ */
 export function PhotoTop({ src, height }: { src: string; height: number }) {
-  const d = SLANT_DROP, angle = SLANT_DEG;
+  const angle = SLANT_DEG;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: height + 20, display: 'flex' }}>
       <img src={src} width={1080} height={height} style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
@@ -83,12 +90,12 @@ export function PhotoTop({ src, height }: { src: string; height: number }) {
         style={{
           position: 'absolute',
           left: 0,
-          top: height - d,
+          top: height,
           width: 1500,
           height: 600,
           background: WHITE,
-          transform: `rotate(${angle}deg)`,
-          transformOrigin: '0 0',
+          transform: `rotate(-${angle}deg)`,
+          transformOrigin: 'left top',
         }}
       />
     </div>
