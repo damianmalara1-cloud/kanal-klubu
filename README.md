@@ -81,5 +81,5 @@ Vercel (projekt `uks-kanal-klubu`) + Supabase (projekt `uks-kanal-klubu`, region
 ## Gotchas
 
 - `next.config.ts` musi mieć `serverExternalPackages: ['sharp', '@resvg/resvg-js', 'satori']` — bez tego bundling Next.js łamie wasm harfbuzzjs, na którym stoi satori, i render planszy pada w `next dev`/`next start`.
-- `npm run lint` zgłasza znane błędy `react-hooks/set-state-in-effect` (`NewPostClient.tsx`, `Preview.tsx`) — świadomie zaakceptowane, nie są bramką: `next build` nie uruchamia eslinta i przechodzi czysto.
+- `npm run lint` zgłasza błędy reguły `react-hooks/set-state-in-effect` we wszystkich komponentach klienckich, które czytają `localStorage` w efekcie (obecnie 3 pliki: `StartClient.tsx`, `NewPostClient.tsx`, `Preview.tsx`; stan na dziś: 16 problemów — 3 błędy + 13 warningów). Świadomie zaakceptowane, nie są bramką: `next build` nie uruchamia eslinta i przechodzi czysto. Liczba plików/problemów rośnie z każdym nowym komponentem czytającym `localStorage` w efekcie — nie traktuj tych 3 jako zamkniętej listy, sprawdź `npm run lint` przy zmianach.
 - Windows: nigdy `taskkill //IM node.exe` — zabija też inne procesy Node w systemie, nie tylko dev server tej appki.
