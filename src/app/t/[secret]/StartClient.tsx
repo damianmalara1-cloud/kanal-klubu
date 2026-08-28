@@ -11,6 +11,7 @@ const KEY = 'kk-author';
 export function StartClient({ secret, names }: { secret: string; names: string[] }) {
   const [author, setAuthor] = useState<string>('');
   const [items, setItems] = useState<Item[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -28,9 +29,24 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
     } catch {
       /* localStorage niedostępny (tryb prywatny) */
     }
-    listRecentAction(secret, author).then((r) => {
-      if ('items' in r) setItems(r.items);
+    let ignore = false;
+    queueMicrotask(() => {
+      if (ignore) return;
+      setItems([]);
+      setListError(null);
     });
+    listRecentAction(secret, author)
+      .then((r) => {
+        if (ignore) return;
+        if ('items' in r) setItems(r.items);
+        else setListError(r.error);
+      })
+      .catch(() => {
+        if (!ignore) setListError('Nie udało się wczytać listy');
+      });
+    return () => {
+      ignore = true;
+    };
   }, [author, secret]);
 
   return (
@@ -57,22 +73,30 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
       ) : (
         <p className="muted">Najpierw wybierz swoje imię.</p>
       )}
-      {author && items.length > 0 && (
+      {author && (items.length > 0 || listError) && (
         <>
           <h2>Twoje ostatnie</h2>
-          <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>
-            Tekst i plansza są dostępne przez 7 dni.
-          </p>
-          <ul className="list">
-            {items.map((i) => (
-              <li key={i.id}>
-                <Link href={`/t/${secret}/post/${i.id}`}>
-                  {TYPE_LABEL[i.type]} · {i.title}
-                </Link>
-                <span className="status">{STATUS_LABEL[i.status]}</span>
-              </li>
-            ))}
-          </ul>
+          {listError ? (
+            <p className="muted" role="status">
+              {listError}
+            </p>
+          ) : (
+            <>
+              <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>
+                Tekst i plansza są dostępne przez 7 dni.
+              </p>
+              <ul className="list">
+                {items.map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/t/${secret}/post/${i.id}`}>
+                      {TYPE_LABEL[i.type]} · {i.title}
+                    </Link>
+                    <span className="status">{STATUS_LABEL[i.status]}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
     </main>
