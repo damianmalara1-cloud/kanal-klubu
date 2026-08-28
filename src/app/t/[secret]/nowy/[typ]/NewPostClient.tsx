@@ -26,6 +26,8 @@ const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // tyle samo, co `purgeAfter` szkicu n
 export function NewPostClient({ secret, type, teams }: { secret: string; type: PostType; teams: string[] }) {
   const router = useRouter();
   const [author, setAuthor] = useState('');
+  // Dopóki nie wiemy, czy imię siedzi w localStorage, nie straszymy banerem — inaczej mignąłby przy każdym wejściu.
+  const [authorChecked, setAuthorChecked] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({ venue: 'dom' });
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [hero, setHero] = useState(0);
@@ -58,6 +60,8 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       setId(typeof d.id === 'string' ? d.id : null);
     } catch {
       /* localStorage niedostępny (tryb prywatny) */
+    } finally {
+      setAuthorChecked(true);
     }
   }, [draftKey]);
   useEffect(() => {
@@ -218,6 +222,13 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
         <Link href={`/t/${secret}`}>← Kanał Klubu</Link> · {author || 'brak imienia'}
       </p>
       <h1>{TYPE_LABEL[type]}</h1>
+      {authorChecked && !author && (
+        // Wejście prosto na formularz (zakładka, link z czatu) kończyło się komunikatem dopiero po
+        // wypełnieniu całości i kliknięciu „Wygeneruj post" — a powrót po imię kasował pracę (UAT D-07).
+        <div className="warn" role="alert">
+          Najpierw wybierz swoje imię — wróć na <Link href={`/t/${secret}`}>Kanał Klubu</Link>.
+        </div>
+      )}
       {error && (
         <div className="error" role="alert">
           {error}

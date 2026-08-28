@@ -94,3 +94,13 @@ test('trener: drużyna spoza listy, powrót po odświeżeniu, usuwanie zdjęcia'
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Mecz · UKS Banino 30 : 21 Sokół Gdańsk · oldboye/)).toBeVisible();
 });
+
+// D-07: wejście prosto na formularz (zakładka, link z czatu) mówi o braku imienia od razu, nie po wypełnieniu.
+test('bez wybranego imienia formularz od razu o tym mówi', async ({ page }) => {
+  await page.goto(`/t/${SECRET}/nowy/mecz`);
+  // filter: Next dokłada własny `role="alert"` (route announcer), więc samo getByRole('alert') jest niejednoznaczne.
+  const alert = page.getByRole('alert').filter({ hasText: 'Najpierw wybierz swoje imię' });
+  await expect(alert).toBeVisible();
+  await expect(alert.getByRole('link', { name: 'Kanał Klubu' })).toHaveAttribute('href', `/t/${SECRET}`);
+  await expect(page.getByLabel('Rywal', { exact: true })).toBeVisible(); // formularz zostaje na miejscu
+});
