@@ -43,10 +43,11 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
   const png = await page.request.get(href!);
   expect(png.status()).toBe(200);
   expect(png.headers()['content-type']).toBe('image/png');
-  expect(png.headers()['content-disposition']).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}\.png"$/);
+  expect(png.headers()['content-disposition']).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}-plansza\.png"$/);
   expect((await png.body()).subarray(0, 4).toString('hex')).toBe('89504e47');
   const jpg = await page.request.get((await page.getByRole('link', { name: 'Pobierz zdjęcie 1' }).getAttribute('href'))!);
   expect(jpg.status()).toBe(200); expect(jpg.headers()['content-type']).toBe('image/jpeg');
+  expect(jpg.headers()['content-disposition']).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}-zdjecie-1\.jpg"$/);
 
   await page.getByRole('link', { name: 'Dodaj kolejny' }).click();
   await expect(page.getByText('Gotowy')).toBeVisible();

@@ -31,11 +31,13 @@ describe('download', () => {
     const r = await downloadGet(new Request(`http://x/api/download/${p.id}/plansza?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'plansza' }) });
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toBe('image/png');
-    expect(r.headers.get('content-disposition')).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}\.png"$/);
+    expect(r.headers.get('content-disposition')).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}-plansza\.png"$/);
     expect(r.headers.get('cache-control')).toBe('private, no-store');
     const z = await downloadGet(new Request(`http://x/api/download/${p.id}/zdjecie-1?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'zdjecie-1' }) });
     expect(z.status).toBe(200); expect(z.headers.get('content-type')).toBe('image/jpeg');
-    expect(z.headers.get('content-disposition')).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}\.jpg"$/);
+    // Nazwa musi rozróżniać planszę od zdjęć i zdjęcia między sobą — inaczej w folderze Pobrane
+    // wszystko z jednego posta ma tę samą nazwę i zapisuje się jako (1), (2)…
+    expect(z.headers.get('content-disposition')).toMatch(/^attachment; filename="uks-banino-mecz-\d{4}-\d{2}-\d{2}-zdjecie-1\.jpg"$/);
     expect((await downloadGet(new Request(`http://x/api/download/${p.id}/plansza?secret=zly`), { params: Promise.resolve({ id: p.id, what: 'plansza' }) })).status).toBe(404);
     expect((await downloadGet(new Request(`http://x/api/download/${p.id}/zdjecie-9?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'zdjecie-9' }) })).status).toBe(404);
     expect((await downloadGet(new Request(`http://x/api/download/${p.id}/cokolwiek?secret=${S}`), { params: Promise.resolve({ id: p.id, what: 'cokolwiek' }) })).status).toBe(404);

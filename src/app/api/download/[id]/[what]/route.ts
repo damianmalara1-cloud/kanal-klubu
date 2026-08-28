@@ -18,12 +18,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string; wha
   try {
     const post = await getRepo().get(id);
     if (!post || post.status !== 'done' || post.purgedAt) return NOT_FOUND();
-    let path: string | null = null, ext = 'png', type = 'image/png';
+    let path: string | null = null, ext = 'png', type = 'image/png', part = 'plansza';
     if (what === 'plansza') {
       path = post.creativePath;
     } else {
       const m = /^zdjecie-(\d{1,2})$/.exec(what);
-      if (m) { path = post.photos[Number(m[1]) - 1] ?? null; ext = 'jpg'; type = 'image/jpeg'; }
+      if (m) { path = post.photos[Number(m[1]) - 1] ?? null; ext = 'jpg'; type = 'image/jpeg'; part = `zdjecie-${Number(m[1])}`; }
     }
     if (!path) return NOT_FOUND();
     const buf = await getStorage().get(path);
@@ -32,7 +32,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string; wha
     return new Response(new Uint8Array(buf), {
       headers: {
         'Content-Type': type,
-        'Content-Disposition': `attachment; filename="uks-banino-${post.type}-${day}.${ext}"`,
+        // `part` (plansza / zdjecie-N) w nazwie: bez niego wszystkie pliki z jednego posta lądują w Pobranych
+        // pod tą samą nazwą i przeglądarka dokleja (1), (2)… — trener nie wie, co jest czym.
+        'Content-Disposition': `attachment; filename="uks-banino-${post.type}-${day}-${part}.${ext}"`,
         'Cache-Control': 'private, no-store',
       },
     });
