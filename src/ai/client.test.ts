@@ -7,6 +7,7 @@ vi.mock('@/config', () => ({
 
 import { getConfig } from '@/config';
 import { log } from '@/lib/log';
+import { AppError } from '@/lib/errors';
 import { callModel } from './client';
 
 // Ścieżka nie-2xx w client.ts realnie loguje log.error (produkcyjnie pożądane) — tłumimy tu, żeby output testów był czysty.
@@ -59,6 +60,17 @@ describe('callModel', () => {
   it('komunikat błędu przy nie-2xx zawiera treść odpowiedzi', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429, text: () => 'rate limited' }));
     await expect(callModel('s', 'u')).rejects.toThrow(/rate limited/);
+  });
+
+  it('402 (brak środków na OpenRouterze) → czytelny komunikat po polsku, bez ponowienia', async () => {
+    // 402 nie mija samo — ponawianie tylko przedłuża czekanie trenera. Komunikat ma mu powiedzieć,
+    // że to nie jego wina i kto ma to odblokować.
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 402, text: () => 'insufficient credits' });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(callModel('s', 'u')).rejects.toThrow(/Skończył się budżet AI/);
+    await expect(callModel('s', 'u')).rejects.toBeInstanceOf(AppError);
+    await expect(callModel('s', 'u')).rejects.toMatchObject({ status: 503 });
+    expect(fetchMock).toHaveBeenCalledTimes(3); // 3 wywołania testu = 3 requesty, czyli ani jednego retry
   });
 
   it('rzuca przy pustej odpowiedzi modelu', async () => {
