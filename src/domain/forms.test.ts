@@ -48,6 +48,18 @@ describe('parseForm', () => {
     expect(() => parseForm('ogloszenie', { title: 'Nabór', body: 'A'.repeat(601) })).toThrow();
     expect(parseForm('ogloszenie', { title: 'Nabór', body: 'A'.repeat(600) })).toMatchObject({ body: 'A'.repeat(600) });
   });
+  it('ogloszenie: data ma limit 60 znaków (renderuje się na planszy przez DataCell)', () => {
+    expect(() => parseForm('ogloszenie', { title: 'Nabór', body: 'x', date: 'A'.repeat(61) })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'Nabór', body: 'x', date: 'A'.repeat(60) })).toMatchObject({ date: 'A'.repeat(60) });
+  });
+  it('ogloszenie: godzina ma limit 60 znaków', () => {
+    expect(() => parseForm('ogloszenie', { title: 'Nabór', body: 'x', time: 'A'.repeat(61) })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'Nabór', body: 'x', time: 'A'.repeat(60) })).toMatchObject({ time: 'A'.repeat(60) });
+  });
+  it('ogloszenie: miejsce ma limit 60 znaków', () => {
+    expect(() => parseForm('ogloszenie', { title: 'Nabór', body: 'x', place: 'A'.repeat(61) })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'Nabór', body: 'x', place: 'A'.repeat(60) })).toMatchObject({ place: 'A'.repeat(60) });
+  });
 });
 
 describe('formTeam / postTitle', () => {

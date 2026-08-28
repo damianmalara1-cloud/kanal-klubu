@@ -90,23 +90,36 @@ describe('SukcesCreative', () => {
     expect(Buffer.compare(offBand, onBand)).not.toBe(0);
   });
 
-  it('nagłówek/nazwiska mają ciemne piksele (Anton/Barlow 600)', async () => {
+  it('nazwiska (bohater, Barlow 600) i nagłówek (drugorzędny, Anton) mają ciemne piksele', async () => {
     const pngPhoto = await renderPng(<SukcesCreative post={sukcesPost} photo={await fakePhoto()} partnerBand={false} />);
-    expect(await hasDarkPixel(pngPhoto, { left: 65, top: 850, width: 900, height: 220 })).toBe(true);
+    expect(await hasDarkPixel(pngPhoto, { left: 65, top: 850, width: 900, height: 300 })).toBe(true);
     const pngTypo = await renderPng(<SukcesCreative post={sukcesPost} photo={null} partnerBand={false} />);
-    expect(await hasDarkPixel(pngTypo, { left: 65, top: 330, width: 900, height: 280 })).toBe(true);
+    expect(await hasDarkPixel(pngTypo, { left: 65, top: 330, width: 900, height: 350 })).toBe(true);
   });
 
-  it('3 nazwiska po 40 znaków (limit forms.ts) + opis 120 znaków nie wjeżdżają w pas partnerów', async () => {
+  it('40-znakowy nagłówek + 3 nazwiska po 40 znaków (limity forms.ts), zdjęcie i pas partnerów: nic nie wjeżdża w 1180–1229, nazwiska nadal mają tusz', async () => {
     const stress = {
       ...sukcesPost,
-      form: { ...(sukcesPost.form as object), names: ['Ż'.repeat(40), 'Ż'.repeat(40), 'Ż'.repeat(40)], details: 'A'.repeat(120) },
+      headline: 'A'.repeat(60), // komponent utnie do 40 znaków (.slice(0, 40))
+      form: { ...(sukcesPost.form as object), names: ['Ż'.repeat(40), 'Ż'.repeat(40), 'Ż'.repeat(40)] },
     } as unknown as Post;
     const png = await renderPng(<SukcesCreative post={stress} photo={await fakePhoto()} partnerBand={true} />);
     expect(await isAllWhite(png, { left: 0, top: 1180, width: 1080, height: 50 })).toBe(true);
     // Zaczynamy skan od y=800 (poniżej zdjęcia i ukosu PhotoTop, które legalnie zajmuje pełną szerokość) —
     // niżej powinno być wyłącznie białe tło poza treścią; ten pas łapie tekst uciekający poza prawą krawędź.
     expect(await isAllWhite(png, { left: 1070, top: 800, width: 10, height: 380 })).toBe(true);
+    // nazwiska (bohater planszy) nadal mają tusz mimo maksymalnej długości — nie zostały "wyskalowane w nicość"
+    expect(await hasDarkPixel(png, { left: 65, top: 850, width: 950, height: 200 })).toBe(true);
+  });
+
+  it('wariant typograficzny: 3 nazwiska po 40 znaków + opis 120 znaków (limit forms.ts) nie wjeżdżają w pas partnerów', async () => {
+    const stress = {
+      ...sukcesPost,
+      form: { ...(sukcesPost.form as object), names: ['Ż'.repeat(40), 'Ż'.repeat(40), 'Ż'.repeat(40)], details: 'A'.repeat(120) },
+    } as unknown as Post;
+    const png = await renderPng(<SukcesCreative post={stress} photo={null} partnerBand={true} />);
+    expect(await isAllWhite(png, { left: 0, top: 1180, width: 1080, height: 50 })).toBe(true);
+    expect(await isAllWhite(png, { left: 1070, top: 0, width: 10, height: 1180 })).toBe(true);
   });
 });
 

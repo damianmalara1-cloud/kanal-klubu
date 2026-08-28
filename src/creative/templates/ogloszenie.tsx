@@ -1,6 +1,11 @@
 import type { OgloszenieForm } from '@/domain/types';
 import type { CreativeProps } from '../types';
-import { Canvas, DataCell, Kicker, Logo, M, PartnerBand, PhotoTop, RedBar, FONT_DISPLAY, upperPl } from '../parts';
+import { BarRow, Canvas, DataCell, Kicker, Logo, M, PartnerBand, PhotoTop, FONT_DISPLAY, upperPl } from '../parts';
+
+// Kiedy/Godzina/Miejsce muszą zmieścić się w JEDNYM wierszu (max 3 komórki) — trzy równe kolumny z
+// dwiema przerwami 26px: (950 − 2×26) / 3 ≈ 299px. Przy szerokości 462px (stara wartość) trzecia
+// komórka się zawijała, a jej linia 2px wyglądała jak podkreślenie wiersza powyżej.
+const CELL_WIDTH = Math.floor((950 - 2 * 26) / 3);
 
 /**
  * Rozmiar wielkiego nagłówka zależny od długości (jak `resultStyle` w turniej.tsx). Nagłówek jest
@@ -51,27 +56,13 @@ export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) 
         >
           {headlineText}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 30 }}>
-          <RedBar />
-          <div
-            style={{
-              display: 'flex',
-              marginLeft: 22,
-              width: 818,
-              fontWeight: 600,
-              fontSize: 24,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-              wordBreak: 'break-word',
-            }}
-          >
-            {sub}
-          </div>
-        </div>
+        <BarRow style={{ marginTop: 30 }} textStyle={{ fontWeight: 600, fontSize: 24, letterSpacing: 1.4, textTransform: 'uppercase' }}>
+          {sub}
+        </BarRow>
         {cells.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 60, gap: 26 }}>
+          <div style={{ display: 'flex', marginTop: 60, gap: 26 }}>
             {cells.map(([label, value]) => (
-              <DataCell key={label} label={label} value={value} width={462} />
+              <DataCell key={label} label={label} value={value} width={CELL_WIDTH} />
             ))}
           </div>
         )}

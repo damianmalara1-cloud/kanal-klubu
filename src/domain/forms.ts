@@ -22,12 +22,19 @@ const sukces = z.object({
   // max 120: opis pod nazwiskami w wariancie typograficznym, żeby nie wjechał w pas partnerów
   details: textOpt(120),
 });
+// Opcjonalny tekst z limitem długości I kolapsem „cały klub" (jak `opt`, tylko z `.max`) — dla pól, które
+// mogą trafić na planszę (DataCell w ogloszenie.tsx), więc też potrzebują rezerwy na skalowanie/łamanie.
+const optMax = (max: number) => str.max(max).transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null);
+
 const ogloszenie = z.object({
   // max 60: nagłówek na planszy i tak ucina się do 40 znaków (patrz ogloszenie.tsx) — 60 to margines dla treści caption/AI
   title: str.min(1).max(60),
   // max 600: treść ogłoszenia idzie do podpisu posta, nie na samą planszę
   body: str.min(1).max(600),
-  team: opt, date: opt, time: opt, place: opt,
+  team: opt,
+  // max 60/pole: date/time/place renderują się na planszy przez DataCell (kolumna ~299px) — bez limitu
+  // bardzo długa wartość mogłaby się nie zmieścić nawet z łamaniem
+  date: optMax(60), time: optMax(60), place: optMax(60),
 });
 
 export function parseForm(type: PostType, raw: unknown): PostForm {

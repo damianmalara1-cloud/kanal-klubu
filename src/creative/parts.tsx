@@ -64,6 +64,33 @@ export function RedBar({ width = 110, style }: { width?: number; style?: CSSProp
 }
 
 /**
+ * Wiersz „czerwony pasek + tekst” — powtarzający się układ w turniej.tsx, sukces.tsx i ogloszenie.tsx.
+ * Szerokość tekstu liczy się sama (950 − barWidth − 24), żeby nie duplikować tej arytmetyki (i nie
+ * rozjeżdżać jej) w każdym szablonie z osobna. `textStyle` niesie stylowanie typograficzne właściwe
+ * danemu wywołaniu (fontSize/fontWeight/uppercase itd.), `style` nadpisuje wiersz (np. marginTop).
+ */
+export function BarRow({
+  children,
+  barWidth = 110,
+  textStyle,
+  style,
+}: {
+  children: ReactNode;
+  barWidth?: number;
+  textStyle?: CSSProperties;
+  style?: CSSProperties;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', ...style }}>
+      <RedBar width={barWidth} style={{ flexShrink: 0 }} />
+      <div style={{ display: 'flex', marginLeft: 24, width: 950 - barWidth - 24, wordBreak: 'break-word', ...textStyle }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Zdjęcie od góry na pełną szerokość; dolna krawędź cięta białym klinem pod stałym kątem SLANT_DEG.
  * Kierunek zgodny z tokenami DS (`--slant-clip-down` / `--slant-skew: skewY(-10deg)`): linia cięcia
  * opada w LEWO — lewa krawędź zdjęcia sięga pełnego `height` (punkt najniższy), prawa krawędź jest
@@ -142,7 +169,7 @@ export function DataCell({ label, value, width, big = 34 }: { label: string; val
       >
         {label}
       </div>
-      <div style={{ display: 'flex', fontWeight: 600, fontSize: big, lineHeight: 1.2 }}>{value}</div>
+      <div style={{ display: 'flex', fontWeight: 600, fontSize: big, lineHeight: 1.2, wordBreak: 'break-word' }}>{value}</div>
     </div>
   );
 }
