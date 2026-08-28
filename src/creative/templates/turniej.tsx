@@ -33,7 +33,10 @@ export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 34 }}>
           <RedBar />
-          <div style={{ display: 'flex', marginLeft: 24, fontWeight: 600, fontSize: photo ? 36 : 40, lineHeight: 1.15, width: 800 }}>{f.name}</div>
+          {/* wordBreak: nazwa bez spacji nie może uciec poza szerokość 800px i wyjechać poza planszę (ten sam problem naprawiony w Teams — mecz.tsx) */}
+          <div style={{ display: 'flex', marginLeft: 24, fontWeight: 600, fontSize: photo ? 36 : 40, lineHeight: 1.15, width: 800, wordBreak: 'break-word' }}>
+            {f.name}
+          </div>
         </div>
         {(f.place || f.team) && (
           <div style={{ display: 'flex', marginTop: 60, gap: 40 }}>

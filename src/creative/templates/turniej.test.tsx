@@ -89,4 +89,16 @@ describe('TurniejCreative', () => {
     const png = await renderPng(<TurniejCreative post={longPost} photo={null} partnerBand={false} />);
     expect(await isAllWhite(png, { left: 0, top: 1170, width: 1080, height: 10 })).toBe(true);
   });
+
+  it('nazwa turnieju bez spacji (60 znaków, limit schematu forms.ts) nie wyjeżdża poza prawą krawędź planszy', async () => {
+    const longNamePost = {
+      ...post,
+      form: { ...(post.form as object), name: 'A'.repeat(60) },
+    } as unknown as Post;
+    const png = await renderPng(<TurniejCreative post={longNamePost} photo={null} partnerBand={false} />);
+    // wiersz nazwy (RedBar + nazwa) w wariancie typograficznym zaczyna się ok. y≈636 — skanujemy szeroki pas
+    // przy prawej krawędzi canvasu (poza pudełkiem width:800), żeby złapać ucieczkę tekstu niezależnie od
+    // liczby zawiniętych linii
+    expect(await isAllWhite(png, { left: 1070, top: 600, width: 10, height: 250 })).toBe(true);
+  });
 });
