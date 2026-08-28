@@ -5,6 +5,7 @@ const bool = z.enum(['true', 'false', '']).optional().transform((v) => v === 'tr
 const list = (sep: string) => z.string().default('').transform((s) => s.split(sep).map((x) => x.trim()).filter(Boolean));
 
 const schema = z.object({
+  NODE_ENV: z.string().default('development'),
   APP_URL: z.url(),
   COACH_LINK_SECRET: z.string().min(16),
   COACH_NAMES: list(','),
@@ -18,6 +19,11 @@ const schema = z.object({
   PARTNER_INFO_ENABLED: bool,
   CRON_SECRET: z.string().default(''),
   MOCK_EXTERNAL: bool,
+}).refine((e) => !(e.NODE_ENV === 'production' && (e.AI_MOCK || e.MOCK_EXTERNAL)), {
+  // Mock w produkcji nie wywala się głośno — appka udaje, że działa: posty lądują w pamięci funkcji
+  // (giną przy cold starcie), a generator zwraca tekst testowy zamiast modelu. Padamy przy starcie.
+  message: 'AI_MOCK/MOCK_EXTERNAL nie mogą być włączone w produkcji',
+  path: ['MOCK_EXTERNAL'],
 });
 
 export interface Config {

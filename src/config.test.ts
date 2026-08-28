@@ -30,6 +30,22 @@ describe('loadConfig', () => {
     expect(c.partnerInfoEnabled).toBe(true);
   });
 
+  // Mock w produkcji = appka udaje, że działa: adapter pamięciowy zamiast Supabase (posty giną przy każdym
+  // cold starcie funkcji) i generator zwracający tekst testowy zamiast modelu. Lepiej, żeby deploy padł
+  // przy starcie, niż żeby trener wysłał post o wyniku „24 : 18 Sokół Gdańsk" z zaślepki.
+  it('produkcja: AI_MOCK=true → błąd konfiguracji', () => {
+    expect(() => loadConfig({ ...base, NODE_ENV: 'production', AI_MOCK: 'true' })).toThrow(/nie mogą być włączone w produkcji/);
+  });
+
+  it('produkcja: MOCK_EXTERNAL=true → błąd konfiguracji', () => {
+    expect(() => loadConfig({ ...base, NODE_ENV: 'production', MOCK_EXTERNAL: 'true' })).toThrow(/nie mogą być włączone w produkcji/);
+  });
+
+  it('produkcja bez flag mocka przechodzi; poza produkcją mock jest dozwolony', () => {
+    expect(loadConfig({ ...base, NODE_ENV: 'production' }).aiMock).toBe(false);
+    expect(loadConfig({ ...base, NODE_ENV: 'test', AI_MOCK: 'true', MOCK_EXTERNAL: 'true' }).mockExternal).toBe(true);
+  });
+
   it('pusta flaga boolowska (empty string) parsuje się jako false', () => {
     const c = loadConfig({ ...base, AI_MOCK: '' });
     expect(c.aiMock).toBe(false);
