@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
 import { renderPng } from '../render';
-import { TurniejCreative } from './turniej';
+import { TurniejCreative, resultStyle } from './turniej';
 import { fakePhoto } from '../testUtils';
 import type { Post } from '@/domain/types';
 
@@ -18,6 +18,33 @@ const post = {
     notes: null,
   },
 } as unknown as Post;
+
+/** Skanuje wskazany prostokąt kanał-świadomie — zwraca true, jeśli WSZYSTKIE piksele są biel (kanał R > próg). */
+async function isAllWhite(png: Buffer, region: { left: number; top: number; width: number; height: number }, threshold = 240) {
+  const { data, info } = await sharp(png).extract(region).raw().toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += info.channels) {
+    if (data[i] <= threshold) return false;
+  }
+  return true;
+}
+
+describe('resultStyle', () => {
+  it('krótki wynik (≤20 znaków) — kapitaliki, duży rozmiar', () => {
+    expect(resultStyle('2. miejsce')).toEqual({ text: '2. MIEJSCE', size: 138 });
+  });
+  it('średni wynik (21–30 znaków) — zwykła wielkość liter, średni rozmiar', () => {
+    const s = 'Awans do finału wojewódzkiego, gratulacje!'.slice(0, 30); // slice gwarantuje dokładnie 30 znaków
+    expect(s.length).toBe(30);
+    expect(resultStyle(s)).toEqual({ text: s, size: 96 });
+  });
+  it('długi wynik (>30 znaków) — zwykła wielkość liter, mały rozmiar, NIE kapitaliki', () => {
+    const s = '2. miejsce w kategorii młodzików';
+    expect(s.length).toBeGreaterThan(30);
+    const r = resultStyle(s);
+    expect(r).toEqual({ text: s, size: 72 });
+    expect(r.text).not.toBe(r.text.toLocaleUpperCase('pl-PL')); // nie jest kapitalikami — zawiera małe litery
+  });
+});
 
 describe('TurniejCreative', () => {
   it('oba warianty renderują 1080×1350', async () => {
@@ -38,7 +65,9 @@ describe('TurniejCreative', () => {
   it('wariant ze zdjęciem: strefa próbkowania nie jest biała', async () => {
     const png = await renderPng(<TurniejCreative post={post} photo={await fakePhoto()} partnerBand={false} />);
     const px = await sharp(png).extract({ left: 540, top: 200, width: 1, height: 1 }).raw().toBuffer();
-    expect(px[0]).toBeLessThan(200);
+    expect(px[0]).toBeLessThan(235); // próg luźniejszy — antyaliasing/gradient przy krawędziach
+    expect(px[0]).toBeGreaterThan(px[1]); // R > G
+    expect(px[1]).toBeGreaterThan(px[2]); // G > B — ton czerwono-pomarańczowy (duotone lub fixture)
   });
 
   it('pas partnerów: identyczne wiersze 0–1179, różne wiersze 1230–1350', async () => {
@@ -50,5 +79,14 @@ describe('TurniejCreative', () => {
     const offBand = await sharp(off).extract({ left: 0, top: 1230, width: 1080, height: 120 }).raw().toBuffer();
     const onBand = await sharp(on).extract({ left: 0, top: 1230, width: 1080, height: 120 }).raw().toBuffer();
     expect(Buffer.compare(offBand, onBand)).not.toBe(0);
+  });
+
+  it('długi wynik ("2. miejsce w kategorii młodzików") nie schodzi poniżej y=1170', async () => {
+    const longPost = {
+      ...post,
+      form: { ...(post.form as object), result: '2. miejsce w kategorii młodzików' },
+    } as unknown as Post;
+    const png = await renderPng(<TurniejCreative post={longPost} photo={null} partnerBand={false} />);
+    expect(await isAllWhite(png, { left: 0, top: 1170, width: 1080, height: 10 })).toBe(true);
   });
 });

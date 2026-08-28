@@ -3,13 +3,16 @@ import type { MeczForm, OgloszenieForm, Post, PostForm, PostType, SukcesForm, Tu
 
 const str = z.string().trim();
 const opt = str.transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null);
+// Limit długości wyniku/miejsca turnieju — bez kolapsu „cały klub" (nieistotny dla tego pola), reszta semantyki opcjonalności jak `opt`.
+const resultOpt = str.max(40).transform((s) => (s === '' ? null : s)).nullable().default(null);
 const num = z.coerce.number().int().min(0).max(199);
 
 const mecz = z.object({
-  team: opt, opponent: str.min(1), scoreHome: num, scoreAway: num,
+  // max 48: rezerwa na skalowanie czcionki w kreacji, żeby drużyny nie wjeżdżały w pas partnerów (1180–1350 px)
+  team: opt, opponent: str.min(1).max(48), scoreHome: num, scoreAway: num,
   venue: z.enum(['dom', 'wyjazd']).default('dom'), venueCity: opt, notes: opt,
 });
-const turniej = z.object({ name: str.min(1), place: opt, team: opt, result: opt, notes: opt });
+const turniej = z.object({ name: str.min(1).max(60), place: opt, team: opt, result: resultOpt, notes: opt });
 const sukces = z.object({
   names: z.array(str).transform((a) => a.filter(Boolean)).pipe(z.array(z.string()).min(1)),
   kind: z.enum(['kadra', 'medal', 'wyroznienie', 'inne']), team: opt, details: opt,

@@ -20,6 +20,18 @@ describe('parseForm', () => {
   it('turniej wymaga nazwy', () => {
     expect(parseForm('turniej', { name: 'Kaszubski Turniej', result: '2. miejsce' })).toMatchObject({ name: 'Kaszubski Turniej' });
   });
+  it('mecz: rywal ma limit 48 znaków (rezerwa na pas partnerów w kreacji)', () => {
+    expect(() => parseForm('mecz', { opponent: 'A'.repeat(49), scoreHome: '1', scoreAway: '2' })).toThrow();
+    expect(parseForm('mecz', { opponent: 'A'.repeat(48), scoreHome: '1', scoreAway: '2' })).toMatchObject({ opponent: 'A'.repeat(48) });
+  });
+  it('turniej: nazwa ma limit 60 znaków', () => {
+    expect(() => parseForm('turniej', { name: 'A'.repeat(61) })).toThrow();
+    expect(parseForm('turniej', { name: 'A'.repeat(60) })).toMatchObject({ name: 'A'.repeat(60) });
+  });
+  it('turniej: wynik/miejsce ma limit 40 znaków', () => {
+    expect(() => parseForm('turniej', { name: 'Turniej', result: 'A'.repeat(41) })).toThrow();
+    expect(parseForm('turniej', { name: 'Turniej', result: 'A'.repeat(40) })).toMatchObject({ result: 'A'.repeat(40) });
+  });
 });
 
 describe('formTeam / postTitle', () => {
