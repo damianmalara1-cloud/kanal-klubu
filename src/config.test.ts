@@ -15,7 +15,6 @@ describe('loadConfig', () => {
     expect(c.teams).toEqual(['młodziczki (2011+)', 'młodzicy (2011+)']);
     expect(c.klubProTeams).toEqual(['młodziczki (2011+)']);
     expect(c.aiModel).toBe('anthropic/claude-haiku-4.5');
-    expect(c.publishMode).toBe('unpublished');
     expect(c.partnerInfoEnabled).toBe(false);
     expect(c.mockExternal).toBe(false);
   });

@@ -16,7 +16,7 @@ export default defineConfig({
       COACH_NAMES: 'Ania,Krzysiek',
       TEAMS: 'młodziczki (2011+);młodzicy (2011+);dziewczęta 2013+',
       KLUB_PRO_TEAMS: 'młodziczki (2011+);młodzicy (2011+)',
-      TELEGRAM_CHAT_ID: '1', PARTNER_INFO_ENABLED: 'false', PUBLISH_MODE: 'unpublished',
+      PARTNER_INFO_ENABLED: 'false',
     },
   },
 });

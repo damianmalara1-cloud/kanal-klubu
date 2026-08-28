@@ -6,7 +6,6 @@ import { getStorage } from '@/storage';
 import { formTeam, parseForm } from '@/domain/forms';
 import type { Post, PostType } from '@/domain/types';
 import { AppError } from '@/lib/errors';
-import { newToken } from '@/lib/ids';
 import { nowIso, plusHours } from '@/lib/dates';
 
 export const MAX_PHOTOS = 10;
@@ -28,7 +27,6 @@ export async function createDraft(input: { author: string; type: PostType; form:
     form,
     ip: input.ip,
     partnerInfo: team !== null && c.klubProTeams.includes(team),
-    reviewToken: newToken(),
     purgeAfter: plusHours(nowIso(), 24),
   });
 }

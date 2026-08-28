@@ -15,19 +15,12 @@ create table if not exists public.posts (
   regen_count int not null default 0,
   fact_warning text,
   partner_info boolean not null default false,
-  status text not null default 'draft' check (status in ('draft','pending','approving','published','rejected','failed')),
-  review_token text not null,
-  tg_message_id bigint,
-  reviewer_note text,
-  fb_post_id text,
-  published_at timestamptz,
-  error text,
+  status text not null default 'draft' check (status in ('draft','done')),
   purge_after timestamptz,
   purged_at timestamptz,
   ip text
 );
 create index if not exists posts_author_created on public.posts (author, created_at desc);
-create index if not exists posts_pending_unnotified on public.posts (updated_at) where status = 'pending' and tg_message_id is null;
 create index if not exists posts_purge on public.posts (purge_after) where purged_at is null;
 create index if not exists posts_ip_created on public.posts (ip, created_at);
 alter table public.posts enable row level security; -- brak polityk = brak dostępu z anon; serwer używa service key

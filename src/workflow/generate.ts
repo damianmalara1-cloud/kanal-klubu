@@ -55,7 +55,6 @@ export async function generate(id: string, note?: string, opts: { byReviewer?: b
     kicker: gen.kicker,
     factWarning: gen.factWarning,
     regenCount: isRegen ? post.regenCount + 1 : post.regenCount,
-    reviewerNote: opts.byReviewer ? (note ?? null) : post.reviewerNote,
   });
   return rerenderCreative(id);
 }

@@ -14,12 +14,6 @@ const schema = z.object({
   AI_MOCK: bool,
   SUPABASE_URL: z.string().default(''),
   SUPABASE_SERVICE_KEY: z.string().default(''),
-  TELEGRAM_BOT_TOKEN: z.string().default(''),
-  TELEGRAM_WEBHOOK_SECRET: z.string().default(''),
-  TELEGRAM_CHAT_ID: z.string().default(''),
-  FB_PAGE_ID: z.string().default(''),
-  FB_PAGE_TOKEN: z.string().default(''),
-  PUBLISH_MODE: z.enum(['unpublished', 'live']).default('unpublished'),
   PARTNER_INFO_ENABLED: bool,
   CRON_SECRET: z.string().default(''),
   MOCK_EXTERNAL: bool,
@@ -36,12 +30,6 @@ export interface Config {
   aiMock: boolean;
   supabaseUrl: string;
   supabaseServiceKey: string;
-  telegramBotToken: string;
-  telegramWebhookSecret: string;
-  telegramChatId: string;
-  fbPageId: string;
-  fbPageToken: string;
-  publishMode: 'unpublished' | 'live';
   partnerInfoEnabled: boolean;
   cronSecret: string;
   mockExternal: boolean;
@@ -60,12 +48,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     aiMock: e.AI_MOCK,
     supabaseUrl: e.SUPABASE_URL,
     supabaseServiceKey: e.SUPABASE_SERVICE_KEY,
-    telegramBotToken: e.TELEGRAM_BOT_TOKEN,
-    telegramWebhookSecret: e.TELEGRAM_WEBHOOK_SECRET,
-    telegramChatId: e.TELEGRAM_CHAT_ID,
-    fbPageId: e.FB_PAGE_ID,
-    fbPageToken: e.FB_PAGE_TOKEN,
-    publishMode: e.PUBLISH_MODE,
     partnerInfoEnabled: e.PARTNER_INFO_ENABLED,
     cronSecret: e.CRON_SECRET,
     mockExternal: e.MOCK_EXTERNAL,

@@ -2,16 +2,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Post } from '@/domain/types';
 import { newId } from '@/lib/ids';
 import { nowIso } from '@/lib/dates';
-import { blankPost, type NewPost, type PostsRepo } from './types';
+import { blankPost, COLS, type NewPost, type PostsRepo } from './types';
 
-const COLS: Record<keyof Post, string> = {
-  id: 'id', createdAt: 'created_at', updatedAt: 'updated_at', author: 'author', type: 'type', form: 'form', photos: 'photos',
-  heroPhoto: 'hero_photo', captionAi: 'caption_ai', caption: 'caption', headline: 'headline', kicker: 'kicker', creativePath: 'creative_path',
-  regenCount: 'regen_count', factWarning: 'fact_warning', partnerInfo: 'partner_info', status: 'status', reviewToken: 'review_token',
-  tgMessageId: 'tg_message_id', reviewerNote: 'reviewer_note', fbPostId: 'fb_post_id', publishedAt: 'published_at', error: 'error',
-  purgeAfter: 'purge_after', purgedAt: 'purged_at', ip: 'ip',
-};
-const TS_COLS = new Set(['created_at', 'updated_at', 'published_at', 'purge_after', 'purged_at']);
+const TS_COLS = new Set(['created_at', 'updated_at', 'purge_after', 'purged_at']);
 const toRow = (p: Partial<Post>) => Object.fromEntries(Object.entries(p).map(([k, v]) => [COLS[k as keyof Post], v]));
 const fromRow = (r: Record<string, unknown>): Post =>
   Object.fromEntries(
@@ -60,9 +53,5 @@ export class SupabaseRepo implements PostsRepo {
   async listForPurge(now: string) {
     const { data, error } = await this.q().select('*').is('purged_at', null).lte('purge_after', now); if (error) throw error;
     return (data ?? []).map(fromRow);
-  }
-  async listPendingUnnotified(before: string) {
-    const { data, error } = await this.q().select('*').eq('status', 'pending').is('tg_message_id', null).lt('updated_at', before);
-    if (error) throw error; return (data ?? []).map(fromRow);
   }
 }

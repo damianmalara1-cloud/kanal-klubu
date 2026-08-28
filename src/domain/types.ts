@@ -1,5 +1,5 @@
 export type PostType = 'mecz' | 'turniej' | 'sukces' | 'ogloszenie';
-export type PostStatus = 'draft' | 'pending' | 'approving' | 'published' | 'rejected' | 'failed';
+export type PostStatus = 'draft' | 'done';
 export const POST_TYPES: PostType[] = ['mecz', 'turniej', 'sukces', 'ogloszenie'];
 export const TYPE_LABEL: Record<PostType, string> = { mecz: 'Mecz', turniej: 'Turniej', sukces: 'Sukces', ogloszenie: 'Ogłoszenie' };
 
@@ -15,8 +15,7 @@ export interface Post {
   author: string; type: PostType; form: PostForm;
   photos: string[]; heroPhoto: string | null;
   captionAi: string | null; caption: string | null; headline: string | null; kicker: string | null;
-  creativePath: string | null; regenCount: number; factWarning: string | null; partnerInfo: boolean;
-  status: PostStatus; reviewToken: string; tgMessageId: number | null; reviewerNote: string | null;
-  fbPostId: string | null; publishedAt: string | null; error: string | null;
+  creativePath: string | null; regenCount: number; factWarning: string | null;
+  partnerInfo: boolean; status: PostStatus;
   purgeAfter: string | null; purgedAt: string | null; ip: string | null;
 }

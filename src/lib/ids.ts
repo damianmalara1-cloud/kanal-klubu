@@ -1,3 +1,2 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 export const newId = () => randomUUID();
-export const newToken = () => randomBytes(32).toString('hex');

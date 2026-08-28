@@ -63,7 +63,7 @@ describe('parseForm', () => {
 });
 
 describe('formTeam / postTitle', () => {
-  const base = { id: 'x', createdAt: '', updatedAt: '', author: 'Ania', photos: [] as string[], heroPhoto: null, captionAi: null, caption: null, headline: null, kicker: null, creativePath: null, regenCount: 0, factWarning: null, partnerInfo: false, status: 'draft' as const, reviewToken: 't', tgMessageId: null, reviewerNote: null, fbPostId: null, publishedAt: null, error: null, purgeAfter: null, purgedAt: null, ip: null } as const;
+  const base = { id: 'x', createdAt: '', updatedAt: '', author: 'Ania', photos: [] as string[], heroPhoto: null, captionAi: null, caption: null, headline: null, kicker: null, creativePath: null, regenCount: 0, factWarning: null, partnerInfo: false, status: 'draft' as const, purgeAfter: null, purgedAt: null, ip: null } as const;
   it('tytuł meczu ma wynik ze spacjami', () => {
     const p: Post = { ...base, type: 'mecz', form: { team: 'młodziczki (2011+)', opponent: 'Sokół', scoreHome: 24, scoreAway: 18, venue: 'dom', venueCity: null, notes: null } };
     expect(postTitle(p)).toBe('UKS Banino 24 : 18 Sokół · młodziczki (2011+)');

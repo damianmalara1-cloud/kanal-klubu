@@ -25,7 +25,4 @@ export class MemoryRepo implements PostsRepo {
   async listForPurge(now: string) {
     return [...this.rows.values()].filter((p) => !p.purgedAt && p.purgeAfter && p.purgeAfter <= now).map((p) => ({ ...p }));
   }
-  async listPendingUnnotified(before: string) {
-    return [...this.rows.values()].filter((p) => p.status === 'pending' && p.tgMessageId === null && p.updatedAt < before).map((p) => ({ ...p }));
-  }
 }
