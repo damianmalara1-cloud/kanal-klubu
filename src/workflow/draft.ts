@@ -4,12 +4,15 @@ import { getConfig } from '@/config';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { formTeam, parseForm } from '@/domain/forms';
+import { MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
 import type { Post, PostType } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
 
-export const MAX_PHOTOS = 10;
-export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+// Re-eksport: `@/domain/limits` to source of truth (może go czytać też 'use client' PhotoPicker, patrz task-16
+// ruling 1) — istniejące `import { attachPhoto, MAX_UPLOAD_BYTES } from '@/workflow/draft'` (upload route + testy)
+// działa bez zmian.
+export { MAX_PHOTOS, MAX_UPLOAD_BYTES };
 export const DRAFTS_PER_HOUR_PER_IP = 20;
 
 export async function createDraft(input: { author: string; type: PostType; form: unknown; ip: string | null }): Promise<Post> {
