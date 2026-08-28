@@ -58,7 +58,15 @@ MOCK_EXTERNAL=false
 
 ## Produkcja
 
-Vercel (projekt `uks-kanal-klubu`) + Supabase (projekt `uks-kanal-klubu`, region EU). Deploy: `vercel --prod`. Migracje: `npx supabase db push` (`supabase/migrations/0001_posts.sql` — tabela `posts`, 20 kolumn, bucket `posts` prywatny). Cron: `/api/cron/purge` codziennie o 03:00 UTC (`vercel.json`), Vercel dołącza `Authorization: Bearer <CRON_SECRET>` sam.
+Vercel (projekt `uks-kanal-klubu`) + Supabase (projekt `uks-kanal-klubu`, region EU). Deploy: `vercel --prod`. Cron: `/api/cron/purge` codziennie o 03:00 UTC (`vercel.json`), Vercel dołącza `Authorization: Bearer <CRON_SECRET>` sam.
+
+Migracje (`supabase/migrations/0001_posts.sql` — tabela `posts`, 20 kolumn, bucket `posts` prywatny). `db push` działa dopiero po zalogowaniu i podpięciu projektu — bez tego kroku kończy się błędem o braku linku, nie o migracji:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <ref>   # <ref> = poddomena z SUPABASE_URL (https://<ref>.supabase.co)
+npx supabase db push
+```
 
 Po `vercel --prod` sprawdź crona ręcznie — nie czekaj do 03:00, żeby się dowiedzieć, że `CRON_SECRET` nie zgadza się z tym w Vercelu:
 
@@ -68,6 +76,18 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/purge
 ```
 
 `failed > 0` = któryś post nie dał się przeczyścić (szczegóły w `vercel logs`, wpis `purge` z `id`). Odpowiedź `unauthorized` (401) = zły albo brakujący sekret; w logu zostaje wtedy wpis `cron: unauthorized` z `hasSecret` (samej wartości sekretu appka nigdy nie loguje).
+
+### Smoke po deployu — zanim link pójdzie do trenerów
+
+Jedno przejście na produkcji, z telefonu, na prawdziwych danych — mock nie sprawdzi ani OpenRoutera, ani Supabase, ani uploadu z aparatu:
+
+1. Otwórz `https://<app>/t/<COACH_LINK_SECRET>`, wybierz imię, typ **Mecz**.
+2. Wypełnij drużynę, rywala i wynik, dodaj **prawdziwe zdjęcie z telefonu** (nie zrzut ekranu — chodzi o EXIF i rozmiar z aparatu).
+3. „Wygeneruj post" → sprawdź, czy tekst zgadza się z wynikiem i czy plansza ma zdjęcie.
+4. „Gotowe" → skopiuj tekst, pobierz planszę i zdjęcie, otwórz oba pobrane pliki.
+5. Curl crona (wyżej) → `failed: 0`.
+
+Dopiero po tym roześlij link trenerom.
 
 ## Jak…
 
@@ -82,7 +102,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/purge
 
 - 3 regeneracje na post (`MAX_REGEN`), pierwsza generacja się nie liczy.
 - 20 postów/h z jednego IP.
-- 60 wywołań modelu/h łącznie (regeneracje liczą się podwójnie w limicie).
+- 60 generacji/h łącznie, licząc `regen_count + 1` na post (czyli liczbę kliknięć „Wygeneruj"/„Wygeneruj inaczej"). Szkice bez ani jednej generacji nie wchodzą do limitu. Uwaga: jedna generacja może pójść do modelu więcej niż raz — ponowienie po niepoprawnej odpowiedzi i jedna poprawka strażnika faktów (`src/ai/generate.ts`) — i te dodatkowe wywołania nie są liczone ani widoczne dla trenera. Limit chroni budżet zgrubnie, nie co do jednego requestu.
 - Zdjęcia: 0–10 na post, ≤ 4 MB każde, zmniejszane do max 2048 px.
 - Szkice (`draft`) kasowane po 24 h.
 - Gotowe posty (`done`) tracą pliki po 7 dniach — tekst i rekord zostają jako log.
