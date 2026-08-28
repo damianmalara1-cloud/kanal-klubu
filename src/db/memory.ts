@@ -20,8 +20,11 @@ export class MemoryRepo implements PostsRepo {
       .map((p) => ({ ...p }));
   }
   async countCreatedSince(ip: string, since: string) { return [...this.rows.values()].filter((p) => p.ip === ip && p.createdAt >= since).length; }
-  // liczy po updated_at — świadomie nadlicza, cap kosztów ma być konserwatywny
-  async sumGenerationsSince(since: string) { return [...this.rows.values()].filter((p) => p.updatedAt >= since).reduce((s, p) => s + p.regenCount + 1, 0); }
+  // liczy po updated_at — świadomie nadlicza, cap kosztów ma być konserwatywny; ale tylko posty, które
+  // faktycznie wołały model (`captionAi !== null`) — szkic bez generacji nic nie kosztował
+  async sumGenerationsSince(since: string) {
+    return [...this.rows.values()].filter((p) => p.updatedAt >= since && p.captionAi !== null).reduce((s, p) => s + p.regenCount + 1, 0);
+  }
   async listForPurge(now: string) {
     return [...this.rows.values()].filter((p) => !p.purgedAt && p.purgeAfter && p.purgeAfter <= now).map((p) => ({ ...p }));
   }

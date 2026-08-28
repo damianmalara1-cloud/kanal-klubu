@@ -54,9 +54,10 @@ export class SupabaseRepo implements PostsRepo {
     const { count, error } = await this.q().select('id', { count: 'exact', head: true }).eq('ip', ip).gte('created_at', since);
     if (error) throw error; return count ?? 0;
   }
-  // liczy po updated_at — świadomie nadlicza, cap kosztów ma być konserwatywny
+  // liczy po updated_at — świadomie nadlicza, cap kosztów ma być konserwatywny; ale tylko posty, które
+  // faktycznie wołały model (`caption_ai IS NOT NULL`) — szkic bez generacji nic nie kosztował
   async sumGenerationsSince(since: string) {
-    const { data, error } = await this.q().select('regen_count').gte('updated_at', since); if (error) throw error;
+    const { data, error } = await this.q().select('regen_count').gte('updated_at', since).not('caption_ai', 'is', null); if (error) throw error;
     return (data ?? []).reduce((s, r) => s + (r.regen_count as number) + 1, 0);
   }
   async listForPurge(now: string) {

@@ -59,8 +59,20 @@ describe('MemoryRepo', () => {
   it('liczniki rate limitu', async () => {
     await repo.create(np()); await repo.create(np({ ip: '2.2.2.2' }));
     expect(await repo.countCreatedSince('1.1.1.1', '2000-01-01T00:00:00.000Z')).toBe(1);
-    const p = await repo.create(np()); await repo.update(p.id, { regenCount: 2 });
-    expect(await repo.sumGenerationsSince('2000-01-01T00:00:00.000Z')).toBe(1 + 1 + 3);
+    const a = await repo.create(np()); await repo.update(a.id, { captionAi: 'x' });
+    const b = await repo.create(np()); await repo.update(b.id, { captionAi: 'x', regenCount: 2 });
+    expect(await repo.sumGenerationsSince('2000-01-01T00:00:00.000Z')).toBe(1 + 3);
+  });
+
+  // Limit 60 wywołań modelu/h ma chronić budżet OpenRoutera. Szkic bez generacji nie kosztował ani grosza
+  // (trener otworzył formularz i nic nie kliknął) — doliczanie go zjadało limit wszystkim trenerom naraz.
+  it('sumGenerationsSince pomija szkice bez generacji (captionAi === null)', async () => {
+    await repo.create(np());
+    await repo.create(np());
+    expect(await repo.sumGenerationsSince('2000-01-01T00:00:00.000Z')).toBe(0);
+    const p = await repo.create(np());
+    await repo.update(p.id, { captionAi: 'wygenerowany tekst' });
+    expect(await repo.sumGenerationsSince('2000-01-01T00:00:00.000Z')).toBe(1);
   });
   it('listForPurge', async () => {
     const a = await repo.create(np({ purgeAfter: '2000-01-01T00:00:00.000Z' }));

@@ -85,8 +85,9 @@ describe('generate', () => {
         ip: null,
         form: { team: null, opponent: `Rywal ${i}`, scoreHome: '1', scoreAway: '0', venue: 'dom' },
       });
-      // regenCount 2 → sumGenerationsSince liczy (regenCount+1) na wpis; 20 × 3 = 60 ≥ MODEL_CALLS_PER_HOUR
-      await repo.update(seed.id, { regenCount: 2 });
+      // regenCount 2 → sumGenerationsSince liczy (regenCount+1) na wpis; 20 × 3 = 60 ≥ MODEL_CALLS_PER_HOUR.
+      // captionAi musi być niepuste — szkice bez generacji nie wliczają się do limitu (patrz memory.test.ts).
+      await repo.update(seed.id, { regenCount: 2, captionAi: 'wygenerowany tekst' });
     }
     const d = await draft();
     await expect(generate(d.id)).rejects.toThrow(/Za dużo/);
