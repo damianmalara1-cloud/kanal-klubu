@@ -86,7 +86,7 @@ export function PhotoPicker({
       </p>
       {restoredUploads > 0 && (
         <p className="muted" style={{ fontSize: 13, margin: 0 }} role="status">
-          {restoredUploads} {uploadedPhotosPhrase(restoredUploads)} z poprzedniej próby — dodanie nowych zaczyna post od nowa.
+          {restoredUploads} {uploadedPhotosPhrase(restoredUploads)} z poprzedniej próby — dodanie nowych zdjęć albo zmiana danych zaczyna post od nowa.
         </p>
       )}
       {errors.length > 0 && (
