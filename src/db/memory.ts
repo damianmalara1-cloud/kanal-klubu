@@ -5,11 +5,11 @@ import { blankPost, type NewPost, type PostsRepo } from './types';
 
 export class MemoryRepo implements PostsRepo {
   constructor(private rows: Map<string, Post> = new Map()) {}
-  async create(p: NewPost) { const post = blankPost(newId(), nowIso(), p); this.rows.set(post.id, post); return post; }
+  async create(p: NewPost) { const post = blankPost(newId(), nowIso(), p); this.rows.set(post.id, post); return { ...post }; }
   async get(id: string) { const row = this.rows.get(id); return row ? { ...row } : null; }
   async update(id: string, patch: Partial<Post>) {
     const cur = this.rows.get(id); if (!cur) throw new Error(`post ${id} nie istnieje`);
-    const next = { ...cur, ...patch, updatedAt: patch.updatedAt ?? nowIso() }; this.rows.set(id, next); return next;
+    const next = { ...cur, ...patch, updatedAt: patch.updatedAt ?? nowIso() }; this.rows.set(id, next); return { ...next };
   }
   async delete(id: string) { this.rows.delete(id); }
   async listByAuthor(author: string, limit: number) {

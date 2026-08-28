@@ -83,4 +83,17 @@ describe('MemoryRepo', () => {
     const again = await repo.get(p.id);
     expect(again?.caption).not.toBe('zmienione-tylko-lokalnie');
   });
+  it('create zwraca kopię — mutacja zwróconego obiektu nie wpływa na store', async () => {
+    const p = await repo.create(np());
+    p.caption = 'zmienione-tylko-lokalnie';
+    const again = await repo.get(p.id);
+    expect(again?.caption).not.toBe('zmienione-tylko-lokalnie');
+  });
+  it('update zwraca kopię — mutacja zwróconego obiektu nie wpływa na store', async () => {
+    const p = await repo.create(np());
+    const u = await repo.update(p.id, { status: 'pending' });
+    u.caption = 'zmienione-tylko-lokalnie';
+    const again = await repo.get(p.id);
+    expect(again?.caption).not.toBe('zmienione-tylko-lokalnie');
+  });
 });
