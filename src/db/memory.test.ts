@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRepo } from './memory';
+import { SupabaseRepo } from './supabase';
 import type { NewPost } from './types';
 
 const np = (over: Partial<NewPost> = {}): NewPost => ({
@@ -94,5 +95,35 @@ describe('MemoryRepo', () => {
     u.caption = 'zmienione-tylko-lokalnie';
     const again = await repo.get(p.id);
     expect(again?.caption).not.toBe('zmienione-tylko-lokalnie');
+  });
+
+  // Kontrakt id — MUSI go spełniać KAŻDY adapter `PostsRepo`, nie tylko pamięciowy: id spoza formatu
+  // UUID (ktoś ręcznie przerobił link, stary bookmark) to zwykłe „nie ma takiego posta", a nie błąd.
+  // `SupabaseRepo` realizuje to strażnikiem regex UUID przed zapytaniem (Postgres na kolumnie `uuid`
+  // odpowiedziałby błędem 22P02 → 500 zamiast 404). Test bliźniaczy niżej: `describe('SupabaseRepo — kontrakt id')`.
+  it('get: niepoprawny i nieznany id → null (bez rzucania)', async () => {
+    expect(await repo.get('nie-jest-uuid')).toBeNull();
+    expect(await repo.get('')).toBeNull();
+    expect(await repo.get('00000000-0000-0000-0000-000000000000')).toBeNull();
+  });
+});
+
+// Adapter Supabase dostaje URL, pod którym nic nie nasłuchuje — jeśli strażnik id przepuści zapytanie
+// dalej, test padnie na próbie sieciowej. To jest dowód, że short-circuit działa PRZED wywołaniem PostgREST.
+describe('SupabaseRepo — kontrakt id (ten sam co MemoryRepo)', () => {
+  const repo = new SupabaseRepo('http://127.0.0.1:1', 'klucz-testowy');
+
+  it('get z id spoza formatu UUID → null bez zapytania do bazy', async () => {
+    expect(await repo.get('nie-jest-uuid')).toBeNull();
+    expect(await repo.get('nieistniejacy-id')).toBeNull();
+    expect(await repo.get('')).toBeNull();
+  });
+
+  it('update z id spoza formatu UUID → błąd „nie istnieje" (jak dla nieznanego id w MemoryRepo)', async () => {
+    await expect(repo.update('nie-jest-uuid', { status: 'done' })).rejects.toThrow(/nie istnieje/);
+  });
+
+  it('delete z id spoza formatu UUID → no-op (jak dla nieznanego id w MemoryRepo)', async () => {
+    await expect(repo.delete('nie-jest-uuid')).resolves.toBeUndefined();
   });
 });
