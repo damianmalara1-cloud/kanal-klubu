@@ -23,8 +23,13 @@ export async function processFiles<F extends SizedFile>(
 ): Promise<{ photos: PickedPhoto[]; errors: string[] }> {
   const photos = [...current];
   const errors: string[] = [];
+  let skipped = 0;
   for (const f of files) {
-    if (photos.length >= opts.max) break;
+    if (photos.length >= opts.max) {
+      // Milczące ucinanie nadmiaru wyglądało jak zgubienie plików — licznik (10/10) był jedyną wskazówką (UAT D-06).
+      skipped += 1;
+      continue;
+    }
     let blob: Blob;
     let preview = true;
     try {
@@ -40,6 +45,7 @@ export async function processFiles<F extends SizedFile>(
     }
     photos.push({ key: `${Date.now()}-${photos.length}-${Math.random().toString(36).slice(2, 8)}`, blob, url: opts.makeUrl(blob), preview });
   }
+  if (skipped > 0) errors.push(`Można dodać najwyżej ${opts.max} ${photosNoun(opts.max)} — pominięto ${skipped}`);
   return { photos, errors };
 }
 
@@ -53,12 +59,15 @@ export function removePhoto(photos: PickedPhoto[], hero: number, index: number):
   return { photos: next, hero: nextHero };
 }
 
-/** Polska odmiana zwrotu „N zdjęć już wgranych" — kafle z poprzedniej próby opisujemy zdaniem, a nie samym
- * licznikiem, więc odmienia się i rzeczownik, i imiesłów (1 zdjęcie wgrane / 2 zdjęcia wgrane / 5 zdjęć wgranych). */
-export function uploadedPhotosPhrase(n: number): string {
+/** Polska liczba mnoga: 1 → `one`, 2–4 (poza 12–14) → `few`, reszta → `many`. Komunikaty dla trenera piszemy
+ * zdaniem, nie samym licznikiem, więc odmiana musi się zgadzać. */
+const plural = (n: number, one: string, few: string, many: string): string => {
   const rest = n % 10;
   const teen = n % 100;
-  if (n === 1) return 'zdjęcie już wgrane';
-  if (rest >= 2 && rest <= 4 && !(teen >= 12 && teen <= 14)) return 'zdjęcia już wgrane';
-  return 'zdjęć już wgranych';
-}
+  if (n === 1) return one;
+  return rest >= 2 && rest <= 4 && !(teen >= 12 && teen <= 14) ? few : many;
+};
+
+export const photosNoun = (n: number): string => plural(n, 'zdjęcie', 'zdjęcia', 'zdjęć');
+
+export const uploadedPhotosPhrase = (n: number): string => plural(n, 'zdjęcie już wgrane', 'zdjęcia już wgrane', 'zdjęć już wgranych');

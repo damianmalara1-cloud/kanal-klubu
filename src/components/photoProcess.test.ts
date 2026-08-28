@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { processFiles, removePhoto, uploadedPhotosPhrase, type PickedPhoto } from './photoProcess';
+import { photosNoun, processFiles, removePhoto, uploadedPhotosPhrase, type PickedPhoto } from './photoProcess';
 
 type FakeFile = { size: number; name: string };
 const file = (size: number, name = 'zdjecie.jpg'): FakeFile => ({ size, name });
@@ -8,10 +8,17 @@ const makeUrl = (b: Blob) => `blob:${b.size}`;
 const pp = (key: string): PickedPhoto => ({ key, blob: new Blob([key]), url: `blob:${key}`, preview: true });
 
 describe('processFiles', () => {
-  it('zatrzymuje się po osiągnięciu limitu max', async () => {
+  it('zatrzymuje się po osiągnięciu limitu max i mówi, ile plików pominął', async () => {
     const shrink = vi.fn(async () => new Blob(['x']));
     const { photos, errors } = await processFiles([file(10), file(10), file(10)], [], shrink, { max: 2, maxBytes: 100, makeUrl });
     expect(photos).toHaveLength(2);
+    // Bez tego trener, który zaznaczył w galerii 13 zdjęć, nie dowiadywał się, że 3 przepadły (UAT D-06).
+    expect(errors).toEqual(['Można dodać najwyżej 2 zdjęcia — pominięto 1']);
+  });
+
+  it('nie zgłasza nadmiaru, gdy wszystkie pliki się zmieściły', async () => {
+    const shrink = vi.fn(async () => new Blob(['x']));
+    const { errors } = await processFiles([file(10), file(10)], [], shrink, { max: 2, maxBytes: 100, makeUrl });
     expect(errors).toEqual([]);
   });
 
@@ -108,6 +115,12 @@ describe('removePhoto', () => {
     const r = removePhoto(list, 2, 5);
     expect(r.photos).toEqual(list);
     expect(r.hero).toBe(2);
+  });
+});
+
+describe('photosNoun', () => {
+  it('odmienia rzeczownik po liczbie', () => {
+    expect([1, 2, 5, 12, 22].map(photosNoun)).toEqual(['zdjęcie', 'zdjęcia', 'zdjęć', 'zdjęć', 'zdjęcia']);
   });
 });
 
