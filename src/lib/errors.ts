@@ -1,6 +1,9 @@
 import { ZodError } from 'zod';
 import { log } from './log';
 
+/** Bezpieczne wyciągnięcie komunikatu z nieznanego błędu — współdzielone przez logowanie w API routes (T13). */
+export const errMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
 /** Błąd domenowy z kodem HTTP dla warstwy API/akcji (400 walidacja, 403/404 dostęp, 409 zły stan, 413 za duży upload, 429 limit). */
 export class AppError extends Error {
   constructor(
