@@ -1,0 +1,37 @@
+import { describe, it, expect } from 'vitest';
+import { parseForm, formTeam, postTitle } from './forms';
+import type { Post } from './types';
+
+describe('parseForm', () => {
+  it('mecz wymaga rywala i wyniku, liczby z tekstu', () => {
+    const f = parseForm('mecz', { team: 'młodziczki (2011+)', opponent: 'Sokół Gdańsk', scoreHome: '24', scoreAway: '18', venue: 'dom' });
+    expect(f).toMatchObject({ opponent: 'Sokół Gdańsk', scoreHome: 24, scoreAway: 18, venue: 'dom' });
+    expect(() => parseForm('mecz', { opponent: '', scoreHome: '1', scoreAway: '2' })).toThrow();
+  });
+  it('sukces wymaga min. 1 nazwiska i rodzaju', () => {
+    const f = parseForm('sukces', { names: ['Zuzanna Kowalska', ''], kind: 'kadra' });
+    expect(f).toMatchObject({ names: ['Zuzanna Kowalska'], kind: 'kadra' });
+    expect(() => parseForm('sukces', { names: [], kind: 'kadra' })).toThrow();
+  });
+  it('ogloszenie wymaga tytułu i treści', () => {
+    expect(() => parseForm('ogloszenie', { title: 'Nabór', body: '' })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'Nabór', body: 'Wtorki 17:00', team: 'cały klub' })).toMatchObject({ team: null });
+  });
+  it('turniej wymaga nazwy', () => {
+    expect(parseForm('turniej', { name: 'Kaszubski Turniej', result: '2. miejsce' })).toMatchObject({ name: 'Kaszubski Turniej' });
+  });
+});
+
+describe('formTeam / postTitle', () => {
+  const base = { id: 'x', createdAt: '', updatedAt: '', author: 'Ania', photos: [], heroPhoto: null, captionAi: null, caption: null, headline: null, kicker: null, creativePath: null, regenCount: 0, factWarning: null, partnerInfo: false, status: 'draft', reviewToken: 't', tgMessageId: null, reviewerNote: null, fbPostId: null, publishedAt: null, error: null, purgeAfter: null, purgedAt: null, ip: null } as const;
+  it('tytuł meczu ma wynik ze spacjami', () => {
+    const p: Post = { ...base, type: 'mecz', form: { team: 'młodziczki (2011+)', opponent: 'Sokół', scoreHome: 24, scoreAway: 18, venue: 'dom' } };
+    expect(postTitle(p)).toBe('UKS Banino 24 : 18 Sokół · młodziczki (2011+)');
+    expect(formTeam(p.form)).toBe('młodziczki (2011+)');
+  });
+  it('tytuł sukcesu = nazwiska', () => {
+    const p: Post = { ...base, type: 'sukces', form: { names: ['A B', 'C D'], kind: 'medal' } };
+    expect(postTitle(p)).toBe('A B, C D · medal');
+    expect(formTeam(p.form)).toBeNull();
+  });
+});
