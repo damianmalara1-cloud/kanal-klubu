@@ -6,7 +6,7 @@ vi.mock('@/config', () => ({
   getConfig: () => testConfig({ coachNames: ['Ania'], teams: ['młodziczki (2011+)', 'dziewczęta 2013+'], klubProTeams: ['młodziczki (2011+)'] }),
 }));
 
-import { createDraft, attachPhoto, setHeroPhoto, MAX_PHOTOS } from './draft';
+import { createDraft, attachPhoto, setHeroPhoto, MAX_PHOTOS, MAX_UPLOAD_BYTES } from './draft';
 
 beforeEach(resetAdapters);
 
@@ -40,7 +40,7 @@ describe('attachPhoto', () => {
     const d = await createDraft(mecz(null));
     const big = await sharp({ create: { width: 4000, height: 3000, channels: 3, background: '#888' } }).png().toBuffer();
     const { path, post } = await attachPhoto(d.id, big);
-    expect(path).toBe(`${d.id}/photo-1.jpg`);
+    expect(path).toMatch(new RegExp(`^${d.id}/photo-1-[0-9a-f]{6}\\.jpg$`));
     expect(post.heroPhoto).toBe(path);
     const { getStorage } = await import('@/storage');
     const meta = await sharp((await getStorage().get(path))!).metadata();
@@ -55,5 +55,23 @@ describe('attachPhoto', () => {
     const small = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#888' } }).jpeg().toBuffer();
     for (let i = 0; i < MAX_PHOTOS; i++) await attachPhoto(d.id, small);
     await expect(attachPhoto(d.id, small)).rejects.toThrow(/Maksymalnie/);
+  });
+
+  it('odrzuca zbyt duże zdjęcie (> 4 MiB)', async () => {
+    const d = await createDraft(mecz(null));
+    const tooBig = Buffer.alloc(MAX_UPLOAD_BYTES + 1);
+    await expect(attachPhoto(d.id, tooBig)).rejects.toThrow(/za duż/i);
+    await expect(attachPhoto(d.id, tooBig)).rejects.toMatchObject({ status: 413 });
+  });
+
+  it('równoległe attachPhoto na tym samym poście nie nadpisują się nawzajem w storage', async () => {
+    const d = await createDraft(mecz(null));
+    const small = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#888' } }).jpeg().toBuffer();
+    const [a, b] = await Promise.all([attachPhoto(d.id, small), attachPhoto(d.id, small)]);
+    expect(a.path).not.toBe(b.path);
+    const { getStorage } = await import('@/storage');
+    const storage = getStorage();
+    expect(await storage.get(a.path)).not.toBeNull();
+    expect(await storage.get(b.path)).not.toBeNull();
   });
 });

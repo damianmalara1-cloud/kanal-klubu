@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { testConfig, resetAdapters } from '@/test/helpers';
 
+// Flaga w osobnym obiekcie (nie zwykłym `let`) — `vi.mock` poniżej jest hoisted ponad zwykłe deklaracje,
+// więc żeby móc przełączać `partnerInfoEnabled` per test, referencja musi istnieć zanim mock zostanie
+// zarejestrowany. `getConfig()` czyta `flags.partnerInfoEnabled` na żywo przy każdym wywołaniu.
+const { flags } = vi.hoisted(() => ({ flags: { partnerInfoEnabled: true } }));
+
 vi.mock('@/config', () => ({
-  getConfig: () => testConfig({ coachNames: ['Ania'], teams: [], klubProTeams: [], partnerInfoEnabled: true }),
+  getConfig: () =>
+    testConfig({ coachNames: ['Ania'], teams: [], klubProTeams: ['młodziczki (2011+)'], partnerInfoEnabled: flags.partnerInfoEnabled }),
 }));
 vi.mock('@/creative', () => ({ renderCreative: vi.fn(async () => Buffer.from('PNG')) }));
 
+import { getRepo } from '@/db';
 import { renderCreative } from '@/creative';
 import { createDraft } from './draft';
 import { generate, MAX_REGEN } from './generate';
@@ -13,6 +20,7 @@ import { generate, MAX_REGEN } from './generate';
 beforeEach(() => {
   resetAdapters();
   vi.mocked(renderCreative).mockClear();
+  flags.partnerInfoEnabled = true;
 });
 
 const draft = () =>
@@ -40,5 +48,41 @@ describe('generate', () => {
     for (let i = 0; i < MAX_REGEN; i++) await generate(d.id, 'krócej');
     await expect(generate(d.id, 'x')).rejects.toThrow(/Limit/);
     expect((await generate(d.id, 'x', { byReviewer: true })).regenCount).toBe(MAX_REGEN + 1);
+  });
+
+  it('partnerBand: włączony gdy partnerInfoEnabled=true i drużyna w KLUB PRO, wyłączony przez globalny kill-switch', async () => {
+    const d = await createDraft({
+      author: 'Ania',
+      type: 'mecz',
+      ip: null,
+      form: { team: 'młodziczki (2011+)', opponent: 'Sokół Gdańsk', scoreHome: '24', scoreAway: '18', venue: 'dom' },
+    });
+    expect(d.partnerInfo).toBe(true);
+
+    flags.partnerInfoEnabled = true;
+    await generate(d.id);
+    expect(renderCreative).toHaveBeenLastCalledWith(expect.objectContaining({ id: d.id }), null, { partnerBand: true });
+
+    flags.partnerInfoEnabled = false;
+    await generate(d.id, 'x');
+    expect(renderCreative).toHaveBeenLastCalledWith(expect.objectContaining({ id: d.id }), null, { partnerBand: false });
+  });
+
+  it('globalny limit 60 wywołań modelu/h blokuje trenera, recenzent go omija', async () => {
+    const repo = getRepo();
+    for (let i = 0; i < 20; i++) {
+      const seed = await createDraft({
+        author: 'Ania',
+        type: 'mecz',
+        ip: null,
+        form: { team: null, opponent: `Rywal ${i}`, scoreHome: '1', scoreAway: '0', venue: 'dom' },
+      });
+      // regenCount 2 → sumGenerationsSince liczy (regenCount+1) na wpis; 20 × 3 = 60 ≥ MODEL_CALLS_PER_HOUR
+      await repo.update(seed.id, { regenCount: 2 });
+    }
+    const d = await draft();
+    await expect(generate(d.id)).rejects.toThrow(/Za dużo/);
+    const p = await generate(d.id, undefined, { byReviewer: true });
+    expect(p.regenCount).toBe(0);
   });
 });

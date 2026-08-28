@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import sharp from 'sharp';
 import { getConfig } from '@/config';
 import { getRepo } from '@/db';
@@ -38,6 +39,11 @@ async function draftOr404(id: string): Promise<Post> {
   return post;
 }
 
+// Kontrakt: klient wysyła zdjęcia SEKWENCYJNIE, jedno `attachPhoto` na raz (wiąże Task 16 — PhotoPicker).
+// Ordynał w nazwie (`post.photos.length + 1`) może się powtórzyć przy równoległych wywołaniach na tym samym
+// poście — przyrostek losowy w ścieżce chroni tylko przed nadpisaniem cudzego pliku w storage, NIE przed
+// niespójnym stanem `photos` w repo (patrz `db/memory.ts` — read-modify-write bez blokady, świadomie poza
+// zakresem tego zadania).
 export async function attachPhoto(id: string, file: Buffer): Promise<{ path: string; post: Post }> {
   const post = await draftOr404(id);
   if (post.photos.length >= MAX_PHOTOS) throw new AppError(`Maksymalnie ${MAX_PHOTOS} zdjęć`, 400);
@@ -52,7 +58,8 @@ export async function attachPhoto(id: string, file: Buffer): Promise<{ path: str
   } catch {
     throw new AppError('To nie jest obsługiwane zdjęcie', 400);
   }
-  const path = `${id}/photo-${post.photos.length + 1}.jpg`;
+  const suffix = randomBytes(3).toString('hex');
+  const path = `${id}/photo-${post.photos.length + 1}-${suffix}.jpg`;
   await getStorage().put(path, jpg, 'image/jpeg');
   const updated = await getRepo().update(id, { photos: [...post.photos, path], heroPhoto: post.heroPhoto ?? path });
   return { path, post: updated };
