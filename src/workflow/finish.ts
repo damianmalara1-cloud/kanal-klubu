@@ -18,7 +18,7 @@ export async function finish(id: string, caption: string): Promise<Post> {
   const clean = cleanCaption(caption);
   if (clean.length < MIN_CAPTION) throw new AppError(`Tekst jest za krótki (min. ${MIN_CAPTION} znaków)`, 400);
   const now = nowIso();
-  return repo.update(id, { caption: clean, status: 'done', updatedAt: now, purgeAfter: plusDays(now, DONE_RETENTION_DAYS) });
+  return repo.update(id, { caption: clean, status: 'done', purgeAfter: plusDays(now, DONE_RETENTION_DAYS) });
 }
 
 /** Tekst do skopiowania: caption + hashtagi + stopka KLUB PRO (gdy flaga globalna i post objęty programem). */
