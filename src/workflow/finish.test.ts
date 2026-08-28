@@ -8,6 +8,7 @@ import { generate } from './generate';
 import { finish, finalText } from './finish';
 import { getRepo } from '@/db';
 import { HASHTAGS, PARTNER_FOOTER } from '@/ai/postprocess';
+import { isDraftGoneMessage } from '@/domain/messages';
 
 beforeEach(() => { resetAdapters(); cfg.partnerInfoEnabled = false; });
 const mk = () => createDraft({ author: 'Ania', type: 'mecz', ip: null, form: { team: 'młodziczki (2011+)', opponent: 'Sokół', scoreHome: 24, scoreAway: 18, venue: 'dom' } });
@@ -33,6 +34,15 @@ describe('finish', () => {
     const d = await mk(); await generate(d.id); await finish(d.id, 'Wygrana 24 : 18 z Sokołem. Dziękujemy za doping.');
     await expect(finish(d.id, 'Wygrana 24 : 18 z Sokołem. Dziękujemy za doping.')).rejects.toMatchObject({ status: 409 });
     await expect(finish('00000000-0000-0000-0000-000000000000', 'Wygrana 24 : 18 z Sokołem. Dziękujemy.')).rejects.toMatchObject({ status: 404 });
+  });
+  // Klient rozpoznaje martwy szkic wyłącznie po treści komunikatu (`DRAFT_GONE_MESSAGES`) — własne
+  // brzmienie tych błędów zostawiało trenera z `id`, którego serwer już nie zna.
+  it('komunikaty o nieistniejącym/zamkniętym poście są rozpoznawane przez isDraftGoneMessage', async () => {
+    const d = await mk(); await generate(d.id);
+    const long = 'Wygrana 24 : 18 z Sokołem. Dziękujemy za doping.';
+    await expect(finish('00000000-0000-0000-0000-000000000000', long)).rejects.toSatisfy((e: Error) => isDraftGoneMessage(e.message));
+    await finish(d.id, long);
+    await expect(finish(d.id, long)).rejects.toSatisfy((e: Error) => isDraftGoneMessage(e.message));
   });
 });
 
