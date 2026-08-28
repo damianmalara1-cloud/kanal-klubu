@@ -22,7 +22,10 @@ function headlineStyle(text: string, base: number): { size: number; lineHeight: 
 
 export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) {
   const f = post.form as OgloszenieForm;
-  const headlineText = upperPl(post.headline || f.title).slice(0, 40);
+  // Nagłówek WYŁĄCZNIE z pola „Tytuł" (UAT D-10): przy ogłoszeniu źródłem prawdy jest trener, a nie model —
+  // „Nabór" nie może wjechać na planszę jako wymyślone „ZACZNIJ GRAĆ W BANINIE". `post.headline` model nadal
+  // zwraca (zostaje w bazie i w podpisie), ale dla tego typu jest tu świadomie ignorowany.
+  const headlineText = upperPl(f.title).slice(0, 40);
   const sub = upperPl(f.team || 'UKS Banino');
   const cells: [string, string][] = [];
   if (f.date) cells.push(['Kiedy', f.date]);
