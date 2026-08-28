@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { loadConfig } from './config';
 
 const base = {
+  NODE_ENV: 'development' as const,
   APP_URL: 'http://localhost:3000', COACH_LINK_SECRET: 'abcdefghijklmnop',
   COACH_NAMES: 'Ania, Krzysiek', TEAMS: 'młodziczki (2011+);młodzicy (2011+)',
   KLUB_PRO_TEAMS: 'młodziczki (2011+)',
-};
+} satisfies NodeJS.ProcessEnv;
 
 describe('loadConfig', () => {
   it('parsuje listy i domyślne wartości', () => {

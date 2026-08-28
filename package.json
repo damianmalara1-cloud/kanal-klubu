@@ -10,6 +10,7 @@
     "prebuild": "node scripts/embed-assets.mjs",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "embed": "node scripts/embed-assets.mjs",
     "pretest": "node scripts/embed-assets.mjs",
     "test": "vitest run",
