@@ -10,7 +10,9 @@ import { createDraft, attachPhoto, setHeroPhoto, MAX_PHOTOS, MAX_UPLOAD_BYTES } 
 
 beforeEach(resetAdapters);
 
-const mecz = (team: string | null) => ({
+// Drużyna jest po stronie serwera wymagana dla meczu (D-05) — domyślnie bierzemy drużynę spoza KLUB PRO,
+// żeby testy niezwiązane z partnerami nie zależały od tej listy.
+const mecz = (team: string | null = 'dziewczęta 2013+') => ({
   author: 'Ania',
   type: 'mecz' as const,
   ip: '1.1.1.1',
@@ -21,31 +23,34 @@ describe('createDraft', () => {
   it('partnerInfo z drużyny KLUB PRO', async () => {
     expect((await createDraft(mecz('młodziczki (2011+)'))).partnerInfo).toBe(true);
     expect((await createDraft(mecz('dziewczęta 2013+'))).partnerInfo).toBe(false);
-    expect((await createDraft(mecz(null))).partnerInfo).toBe(false);
+  });
+
+  it('mecz bez drużyny → błąd walidacji (drużyna decyduje o stopce KLUB PRO)', async () => {
+    await expect(createDraft(mecz(null))).rejects.toThrow();
   });
 
   it('odrzuca nieznanego trenera i zły formularz', async () => {
-    await expect(createDraft({ ...mecz(null), author: 'Obcy' })).rejects.toThrow(/trener/i);
-    await expect(createDraft({ ...mecz(null), form: { opponent: '' } })).rejects.toThrow();
+    await expect(createDraft({ ...mecz(), author: 'Obcy' })).rejects.toThrow(/trener/i);
+    await expect(createDraft({ ...mecz(), form: { opponent: '' } })).rejects.toThrow();
   });
 
   it('nieznany typ posta → AppError 400, zanim ruszy walidacja formularza', async () => {
     // `parseForm` to switch bez default'a — bez strażnika nieznany typ (przerobiony URL, stary link)
     // przechodzi przez niego na `undefined` i pada dopiero w `formTeam` jako TypeError → 500.
-    const bad = { ...mecz(null), type: 'cokolwiek' as unknown as 'mecz' };
+    const bad = { ...mecz(), type: 'cokolwiek' as unknown as 'mecz' };
     await expect(createDraft(bad)).rejects.toThrow(/Nieznany typ posta/);
     await expect(createDraft(bad)).rejects.toMatchObject({ status: 400 });
   });
 
   it('rate limit 20/h z IP', async () => {
-    for (let i = 0; i < 20; i++) await createDraft(mecz(null));
-    await expect(createDraft(mecz(null))).rejects.toThrow(/Za dużo/);
+    for (let i = 0; i < 20; i++) await createDraft(mecz());
+    await expect(createDraft(mecz())).rejects.toThrow(/Za dużo/);
   });
 });
 
 describe('attachPhoto', () => {
   it('normalizuje do jpeg ≤2048 i ustawia hero', async () => {
-    const d = await createDraft(mecz(null));
+    const d = await createDraft(mecz());
     const big = await sharp({ create: { width: 4000, height: 3000, channels: 3, background: '#888' } }).png().toBuffer();
     const { path, post } = await attachPhoto(d.id, big);
     expect(path).toMatch(new RegExp(`^${d.id}/photo-1-[0-9a-f]{6}\\.jpg$`));
@@ -59,14 +64,14 @@ describe('attachPhoto', () => {
   });
 
   it('limit zdjęć', async () => {
-    const d = await createDraft(mecz(null));
+    const d = await createDraft(mecz());
     const small = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#888' } }).jpeg().toBuffer();
     for (let i = 0; i < MAX_PHOTOS; i++) await attachPhoto(d.id, small);
     await expect(attachPhoto(d.id, small)).rejects.toThrow(/Maksymalnie/);
   });
 
   it('odrzuca zbyt duże zdjęcie (> 4 MiB)', async () => {
-    const d = await createDraft(mecz(null));
+    const d = await createDraft(mecz());
     const tooBig = Buffer.alloc(MAX_UPLOAD_BYTES + 1);
     await expect(attachPhoto(d.id, tooBig)).rejects.toThrow(/za duż/i);
     await expect(attachPhoto(d.id, tooBig)).rejects.toMatchObject({ status: 413 });
@@ -75,7 +80,7 @@ describe('attachPhoto', () => {
   it('odrzuca bombę dekompresyjną — mały plik, ogromna rozdzielczość', async () => {
     // 8000×8000 = 64 Mpx jednolitego koloru → JPEG waży ~0,4 MB (przechodzi limit 4 MB), ale rozpakowanie
     // to ~192 MB w RAM funkcji. Domyślny limit sharpa (~268 Mpx) jest na to za luźny.
-    const d = await createDraft(mecz(null));
+    const d = await createDraft(mecz());
     const bomb = await sharp({ create: { width: 8000, height: 8000, channels: 3, background: '#333' } }).jpeg().toBuffer();
     expect(bomb.length).toBeLessThan(MAX_UPLOAD_BYTES);
     await expect(attachPhoto(d.id, bomb)).rejects.toThrow(/pikseli/);
@@ -83,7 +88,7 @@ describe('attachPhoto', () => {
   });
 
   it('równoległe attachPhoto na tym samym poście nie nadpisują się nawzajem w storage', async () => {
-    const d = await createDraft(mecz(null));
+    const d = await createDraft(mecz());
     const small = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#888' } }).jpeg().toBuffer();
     const [a, b] = await Promise.all([attachPhoto(d.id, small), attachPhoto(d.id, small)]);
     expect(a.path).not.toBe(b.path);

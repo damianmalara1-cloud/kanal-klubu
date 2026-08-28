@@ -28,7 +28,7 @@ const draft = () =>
     author: 'Ania',
     type: 'mecz',
     ip: null,
-    form: { team: null, opponent: 'Sokół Gdańsk', scoreHome: '24', scoreAway: '18', venue: 'dom' },
+    form: { team: 'dziewczęta 2013+', opponent: 'Sokół Gdańsk', scoreHome: '24', scoreAway: '18', venue: 'dom' },
   });
 
 describe('generate', () => {
@@ -83,7 +83,7 @@ describe('generate', () => {
         author: 'Ania',
         type: 'mecz',
         ip: null,
-        form: { team: null, opponent: `Rywal ${i}`, scoreHome: '1', scoreAway: '0', venue: 'dom' },
+        form: { team: 'dziewczęta 2013+', opponent: `Rywal ${i}`, scoreHome: '1', scoreAway: '0', venue: 'dom' },
       });
       // regenCount 2 → sumGenerationsSince liczy (regenCount+1) na wpis; 20 × 3 = 60 ≥ MODEL_CALLS_PER_HOUR.
       // captionAi musi być niepuste — szkice bez generacji nie wliczają się do limitu (patrz memory.test.ts).
