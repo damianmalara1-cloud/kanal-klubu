@@ -39,7 +39,7 @@ export async function createDraft(input: { author: string; type: PostType; form:
 
 async function draftOr404(id: string): Promise<Post> {
   const post = await getRepo().get(id);
-  if (!post || post.status !== 'draft') throw new AppError('Zgłoszenie nie istnieje albo zostało już wysłane', 404);
+  if (!post || post.status !== 'draft') throw new AppError('Post nie istnieje albo jest już zakończony', 404);
   return post;
 }
 

@@ -16,9 +16,9 @@ async function postOr404(id: string): Promise<Post> {
   return post;
 }
 
-/** Renderuje planszę dla aktualnego stanu posta i zapisuje ją do storage. Osobna funkcja od `generate`,
- * bo T18 (podgląd Damiana) przerenderowuje planszę po zmianie stopki KLUB PRO, bez wołania modelu. */
-export async function rerenderCreative(id: string): Promise<Post> {
+/** Renderuje planszę dla aktualnego stanu posta i zapisuje ją do storage. Wydzielone z `generate` dla
+ * czytelności — jedynym wywołującym jest `generate` (żaden przepływ nie renderuje planszy bez modelu). */
+async function rerenderCreative(id: string): Promise<Post> {
   const c = getConfig();
   const repo = getRepo();
   const storage = getStorage();
@@ -33,18 +33,18 @@ export async function rerenderCreative(id: string): Promise<Post> {
 /**
  * Generuje/regeneruje tekst (AI) i planszę dla posta. Pierwsza generacja (`captionAi === null`) nie liczy się
  * do limitu regeneracji trenera — dopiero druga i kolejne próby na tym samym poście są „regeneracją" i podlegają
- * `MAX_REGEN`. Recenzent (`opts.byReviewer`) omija limit regeneracji, limit statusu draft i globalny rate limit —
- * jego poprawki (T18) nie mogą utknąć na cudzym budżecie trenera.
+ * `MAX_REGEN`. Post po „Gotowe" (`status === 'done'`) jest zamknięty: trener kopiuje tekst i publikuje sam,
+ * nie ma już czego regenerować.
  */
-export async function generate(id: string, note?: string, opts: { byReviewer?: boolean } = {}): Promise<Post> {
+export async function generate(id: string, note?: string): Promise<Post> {
   const repo = getRepo();
   const post = await postOr404(id);
-  if (!opts.byReviewer && post.status !== 'draft') throw new AppError('Zgłoszenie zostało już wysłane', 409);
+  if (post.status !== 'draft') throw new AppError('Post jest już zakończony', 409);
   const isRegen = post.captionAi !== null;
-  if (!opts.byReviewer && isRegen && post.regenCount >= MAX_REGEN) {
-    throw new AppError(`Limit ${MAX_REGEN} prób na zgłoszenie — popraw tekst ręcznie albo wyślij`, 429);
+  if (isRegen && post.regenCount >= MAX_REGEN) {
+    throw new AppError(`Limit ${MAX_REGEN} prób na zgłoszenie — popraw tekst ręcznie albo kliknij Gotowe`, 429);
   }
-  if (!opts.byReviewer && (await repo.sumGenerationsSince(plusHours(nowIso(), -1))) >= MODEL_CALLS_PER_HOUR) {
+  if ((await repo.sumGenerationsSince(plusHours(nowIso(), -1))) >= MODEL_CALLS_PER_HOUR) {
     throw new AppError('Za dużo prób, spróbuj za chwilę', 429);
   }
   const gen = await generateCaption(post, note);

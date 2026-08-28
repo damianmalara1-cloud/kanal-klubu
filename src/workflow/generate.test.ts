@@ -42,12 +42,20 @@ describe('generate', () => {
     expect(renderCreative).toHaveBeenCalledWith(expect.objectContaining({ id: d.id }), null, { partnerBand: false });
   });
 
-  it('limit regeneracji dla trenera, brak limitu dla recenzenta', async () => {
+  it('limit regeneracji trenera: pierwsza generacja gratis, potem MAX_REGEN prób', async () => {
     const d = await draft();
     await generate(d.id);
     for (let i = 0; i < MAX_REGEN; i++) await generate(d.id, 'krócej');
     await expect(generate(d.id, 'x')).rejects.toThrow(/Limit/);
-    expect((await generate(d.id, 'x', { byReviewer: true })).regenCount).toBe(MAX_REGEN + 1);
+    await expect(generate(d.id, 'x')).rejects.toThrow(/kliknij Gotowe/);
+  });
+
+  it('post po „Gotowe" jest zamknięty — regeneracja odrzucona', async () => {
+    const d = await draft();
+    await generate(d.id);
+    await getRepo().update(d.id, { status: 'done' });
+    await expect(generate(d.id, 'x')).rejects.toThrow(/Post jest już zakończony/);
+    await expect(generate(d.id, 'x')).rejects.toMatchObject({ status: 409 });
   });
 
   it('partnerBand: włączony gdy partnerInfoEnabled=true i drużyna w KLUB PRO, wyłączony przez globalny kill-switch', async () => {
@@ -68,7 +76,7 @@ describe('generate', () => {
     expect(renderCreative).toHaveBeenLastCalledWith(expect.objectContaining({ id: d.id }), null, { partnerBand: false });
   });
 
-  it('globalny limit 60 wywołań modelu/h blokuje trenera, recenzent go omija', async () => {
+  it('globalny limit 60 wywołań modelu/h blokuje trenera', async () => {
     const repo = getRepo();
     for (let i = 0; i < 20; i++) {
       const seed = await createDraft({
@@ -82,7 +90,5 @@ describe('generate', () => {
     }
     const d = await draft();
     await expect(generate(d.id)).rejects.toThrow(/Za dużo/);
-    const p = await generate(d.id, undefined, { byReviewer: true });
-    expect(p.regenCount).toBe(0);
   });
 });
