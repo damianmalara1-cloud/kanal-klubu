@@ -16,7 +16,7 @@ export interface PostsRepo {
 
 export function blankPost(id: string, now: string, p: NewPost): Post {
   return {
-    id, createdAt: now, updatedAt: now, author: p.author, type: p.type, form: p.form,
+    id, createdAt: now, updatedAt: now, author: p.author, type: p.type, form: structuredClone(p.form),
     photos: [], heroPhoto: null, captionAi: null, caption: null, headline: null, kicker: null,
     creativePath: null, regenCount: 0, factWarning: null, partnerInfo: p.partnerInfo,
     status: 'draft', reviewToken: p.reviewToken, tgMessageId: null, reviewerNote: null,

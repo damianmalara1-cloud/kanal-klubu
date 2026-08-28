@@ -21,11 +21,27 @@ describe('MemoryRepo', () => {
     expect(await repo.get(p.id)).toBeNull();
   });
   it('listByAuthor sortuje malejąco i limituje', async () => {
-    const p1 = await repo.create(np()); await repo.update(p1.id, { status: 'pending' });
-    const p2 = await repo.create(np()); await repo.update(p2.id, { status: 'published' });
+    const p1 = await repo.create(np()); await repo.update(p1.id, { status: 'pending', createdAt: '2026-01-01T00:00:00.000Z' });
+    const p2 = await repo.create(np()); await repo.update(p2.id, { status: 'published', createdAt: '2026-01-02T00:00:00.000Z' });
     await repo.create(np({ author: 'K' }));
     const l = await repo.listByAuthor('Ania', 1);
     expect(l).toHaveLength(1);
+    expect(l[0].id).toBe(p2.id);
+  });
+  it('listByAuthor sortuje stabilnie po id gdy createdAt identyczny (remis)', async () => {
+    // 5 postów o tym samym createdAt — przy niestabilnym sortowaniu (tylko po createdAt)
+    // kolejność wynikałaby z insertion order, co praktycznie nigdy nie zgadza się
+    // z pełnym sortowaniem malejąco po id (1 na 5! = 120 permutacji)
+    const tie = '2026-01-01T00:00:00.000Z';
+    const posts: Awaited<ReturnType<typeof repo.create>>[] = [];
+    for (let i = 0; i < 5; i++) {
+      const p = await repo.create(np());
+      await repo.update(p.id, { status: 'pending', createdAt: tie });
+      posts.push(p);
+    }
+    const expectedOrder = posts.map((p) => p.id).sort((a, b) => b.localeCompare(a));
+    const l = await repo.listByAuthor('Ania', 10);
+    expect(l.map((x) => x.id)).toEqual(expectedOrder);
   });
   it('listByAuthor pomija posty w statusie draft', async () => {
     const draft = await repo.create(np());
@@ -52,5 +68,19 @@ describe('MemoryRepo', () => {
     await repo.update(b.id, { status: 'pending', tgMessageId: null, updatedAt: '2000-01-01T00:00:00.000Z' });
     expect((await repo.listForPurge('2001-01-01T00:00:00.000Z')).map((x) => x.id)).toEqual([a.id]);
     expect((await repo.listPendingUnnotified('2000-06-01T00:00:00.000Z')).map((x) => x.id)).toEqual([b.id]);
+  });
+  it('listForPurge zwraca post gdy purgeAfter jest dokładnie równe now (granica <=)', async () => {
+    const now = '2026-01-01T00:00:00.000Z';
+    const a = await repo.create(np({ purgeAfter: now }));
+    await repo.update(a.id, { status: 'published' });
+    const result = await repo.listForPurge(now);
+    expect(result.map((x) => x.id)).toContain(a.id);
+  });
+  it('get zwraca kopię — mutacja zwróconego obiektu nie wpływa na store', async () => {
+    const p = await repo.create(np());
+    const got = await repo.get(p.id);
+    if (got) got.caption = 'zmienione-tylko-lokalnie';
+    const again = await repo.get(p.id);
+    expect(again?.caption).not.toBe('zmienione-tylko-lokalnie');
   });
 });

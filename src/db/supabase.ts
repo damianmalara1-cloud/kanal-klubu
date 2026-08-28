@@ -11,9 +11,15 @@ const COLS: Record<keyof Post, string> = {
   tgMessageId: 'tg_message_id', reviewerNote: 'reviewer_note', fbPostId: 'fb_post_id', publishedAt: 'published_at', error: 'error',
   purgeAfter: 'purge_after', purgedAt: 'purged_at', ip: 'ip',
 };
+const TS_COLS = new Set(['created_at', 'updated_at', 'published_at', 'purge_after', 'purged_at']);
 const toRow = (p: Partial<Post>) => Object.fromEntries(Object.entries(p).map(([k, v]) => [COLS[k as keyof Post], v]));
 const fromRow = (r: Record<string, unknown>): Post =>
-  Object.fromEntries(Object.entries(COLS).map(([k, col]) => [k, r[col] ?? null])) as unknown as Post;
+  Object.fromEntries(
+    Object.entries(COLS).map(([k, col]) => {
+      const v = r[col] ?? null;
+      return [k, TS_COLS.has(col) ? (v == null ? null : new Date(v as string).toISOString()) : v];
+    }),
+  ) as unknown as Post;
 
 export class SupabaseRepo implements PostsRepo {
   private sb: SupabaseClient;
@@ -33,19 +39,26 @@ export class SupabaseRepo implements PostsRepo {
   }
   async delete(id: string) { const { error } = await this.q().delete().eq('id', id); if (error) throw error; }
   async listByAuthor(author: string, limit: number) {
-    const { data, error } = await this.q().select('*').eq('author', author).neq('status', 'draft').order('created_at', { ascending: false }).limit(limit);
+    const { data, error } = await this.q()
+      .select('*')
+      .eq('author', author)
+      .neq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(limit);
     if (error) throw error; return (data ?? []).map(fromRow);
   }
   async countCreatedSince(ip: string, since: string) {
     const { count, error } = await this.q().select('id', { count: 'exact', head: true }).eq('ip', ip).gte('created_at', since);
     if (error) throw error; return count ?? 0;
   }
+  // liczy po updated_at — świadomie nadlicza, cap kosztów ma być konserwatywny
   async sumGenerationsSince(since: string) {
     const { data, error } = await this.q().select('regen_count').gte('updated_at', since); if (error) throw error;
     return (data ?? []).reduce((s, r) => s + (r.regen_count as number) + 1, 0);
   }
   async listForPurge(now: string) {
-    const { data, error } = await this.q().select('*').is('purged_at', null).lt('purge_after', now); if (error) throw error;
+    const { data, error } = await this.q().select('*').is('purged_at', null).lte('purge_after', now); if (error) throw error;
     return (data ?? []).map(fromRow);
   }
   async listPendingUnnotified(before: string) {
