@@ -5,6 +5,8 @@ const str = z.string().trim();
 const opt = str.transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null);
 // Limit długości wyniku/miejsca turnieju — bez kolapsu „cały klub" (nieistotny dla tego pola), reszta semantyki opcjonalności jak `opt`.
 const resultOpt = str.max(40).transform((s) => (s === '' ? null : s)).nullable().default(null);
+// Opcjonalny tekst z limitem długości, bez kolapsu „cały klub" (pole opisowe, nie selektor drużyny) — używane w `sukces.details`.
+const textOpt = (max: number) => str.max(max).transform((s) => (s === '' ? null : s)).nullable().default(null);
 const num = z.coerce.number().int().min(0).max(199);
 
 const mecz = z.object({
@@ -14,10 +16,19 @@ const mecz = z.object({
 });
 const turniej = z.object({ name: str.min(1).max(60), place: opt, team: opt, result: resultOpt, notes: opt });
 const sukces = z.object({
-  names: z.array(str).transform((a) => a.filter(Boolean)).pipe(z.array(z.string()).min(1)),
-  kind: z.enum(['kadra', 'medal', 'wyroznienie', 'inne']), team: opt, details: opt,
+  // max 40/nazwisko: rezerwa na skalowanie czcionki listy nazwisk w kreacji (patrz `namesStyle` w sukces.tsx)
+  names: z.array(str.max(40)).transform((a) => a.filter(Boolean)).pipe(z.array(z.string()).min(1)),
+  kind: z.enum(['kadra', 'medal', 'wyroznienie', 'inne']), team: opt,
+  // max 120: opis pod nazwiskami w wariancie typograficznym, żeby nie wjechał w pas partnerów
+  details: textOpt(120),
 });
-const ogloszenie = z.object({ title: str.min(1), body: str.min(1), team: opt, date: opt, time: opt, place: opt });
+const ogloszenie = z.object({
+  // max 60: nagłówek na planszy i tak ucina się do 40 znaków (patrz ogloszenie.tsx) — 60 to margines dla treści caption/AI
+  title: str.min(1).max(60),
+  // max 600: treść ogłoszenia idzie do podpisu posta, nie na samą planszę
+  body: str.min(1).max(600),
+  team: opt, date: opt, time: opt, place: opt,
+});
 
 export function parseForm(type: PostType, raw: unknown): PostForm {
   switch (type) {

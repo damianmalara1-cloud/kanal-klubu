@@ -43,3 +43,6 @@ next-env.d.ts
 
 # wygenerowane assety (patrz scripts/embed-assets.mjs)
 src/creative/assets.generated.ts
+
+# próbki kreacji (patrz scripts/render-samples.ts) — regenerowane, nie commitujemy
+/samples

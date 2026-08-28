@@ -32,6 +32,22 @@ describe('parseForm', () => {
     expect(() => parseForm('turniej', { name: 'Turniej', result: 'A'.repeat(41) })).toThrow();
     expect(parseForm('turniej', { name: 'Turniej', result: 'A'.repeat(40) })).toMatchObject({ result: 'A'.repeat(40) });
   });
+  it('sukces: nazwisko ma limit 40 znaków (rezerwa na skalowanie czcionki w kreacji)', () => {
+    expect(() => parseForm('sukces', { names: ['A'.repeat(41)], kind: 'kadra' })).toThrow();
+    expect(parseForm('sukces', { names: ['A'.repeat(40)], kind: 'kadra' })).toMatchObject({ names: ['A'.repeat(40)] });
+  });
+  it('sukces: opis ma limit 120 znaków', () => {
+    expect(() => parseForm('sukces', { names: ['A'], kind: 'kadra', details: 'A'.repeat(121) })).toThrow();
+    expect(parseForm('sukces', { names: ['A'], kind: 'kadra', details: 'A'.repeat(120) })).toMatchObject({ details: 'A'.repeat(120) });
+  });
+  it('ogloszenie: tytuł ma limit 60 znaków', () => {
+    expect(() => parseForm('ogloszenie', { title: 'A'.repeat(61), body: 'x' })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'A'.repeat(60), body: 'x' })).toMatchObject({ title: 'A'.repeat(60) });
+  });
+  it('ogloszenie: treść ma limit 600 znaków', () => {
+    expect(() => parseForm('ogloszenie', { title: 'Nabór', body: 'A'.repeat(601) })).toThrow();
+    expect(parseForm('ogloszenie', { title: 'Nabór', body: 'A'.repeat(600) })).toMatchObject({ body: 'A'.repeat(600) });
+  });
 });
 
 describe('formTeam / postTitle', () => {

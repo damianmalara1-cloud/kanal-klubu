@@ -14,6 +14,7 @@
     "embed": "node scripts/embed-assets.mjs",
     "pretest": "node scripts/embed-assets.mjs",
     "test": "vitest run",
+    "samples": "tsx scripts/render-samples.ts",
     "test:watch": "vitest",
     "e2e": "playwright test"
   },
