@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Storage } from './types';
+import type { SupabaseStorageLike } from './types';
 
 function isNotFound(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -10,7 +10,9 @@ function isNotFound(error: unknown): boolean {
   return status === 404 || statusCode === '404' || (status === 400 && /not found/i.test(message)) || /not found/i.test(message);
 }
 
-export class SupabaseStorage implements Storage {
+export class SupabaseStorage implements SupabaseStorageLike {
+  readonly kind = 'supabase' as const;
+
   private sb: SupabaseClient;
 
   constructor(url: string, key: string, private bucket = 'posts') {

@@ -1,10 +1,37 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 const SECRET = 'test-secret-1234567890';
+
+/** `toBeVisible()` na <img> przechodzi TAKŻE dla zepsutego obrazka — element ma atrybuty width/height,
+ * więc zajmuje miejsce w kadrze, choć przeglądarka nic nie wczytała (regresja R-01 przeszła przez taką
+ * asercję niezauważona). Sprawdzamy więc piksele: 1080 px to szerokość planszy. */
+async function expectPlanszaLoaded(page: Page) {
+  const img = page.getByRole('img', { name: 'Plansza' });
+  await expect(img).toBeVisible({ timeout: 90_000 });
+  await expect
+    .poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth), { timeout: 30_000 })
+    .toBe(1080);
+}
 
 test('zły sekret → 404', async ({ page }) => {
   const r = await page.goto('/t/zly-sekret');
   expect(r?.status()).toBe(404);
   await expect(page.getByRole('heading', { name: 'Nie znaleziono' })).toBeVisible();
+});
+
+// R-01: post BEZ zdjęć — wtedy pierwszym, kto sięga po magazyn plików, jest akcja serwera, a nie trasa
+// `/api/upload`. Dokładnie ten układ wywalał planszę (`/api/file` → 404), więc test musi stać PRZED
+// przebiegami ze zdjęciami: singleton magazynu żyje do końca procesu serwera i późniejszy test już go
+// nie odtworzy. Nie przestawiaj kolejności bez zastąpienia tego innym mechanizmem.
+test('trener: post bez zdjęć — plansza naprawdę się wczytuje', async ({ page }) => {
+  await page.goto(`/t/${SECRET}`);
+  await page.getByRole('button', { name: 'Ania' }).click();
+  await page.getByRole('link', { name: 'Mecz' }).click();
+  await page.getByLabel('Drużyna').selectOption('młodziczki (2011+)');
+  await page.getByLabel('Rywal', { exact: true }).fill('Bez Zdjęć');
+  await page.getByLabel('Bramki UKS Banino').fill('21');
+  await page.getByLabel('Bramki rywala').fill('19');
+  await page.getByRole('button', { name: 'Wygeneruj post' }).click();
+  await expectPlanszaLoaded(page);
 });
 
 test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', async ({ page }) => {
@@ -19,11 +46,11 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
   await expect(page.getByRole('button', { name: /Zdjęcie 2 na planszę/ })).toBeVisible();
   await page.getByRole('button', { name: /Zdjęcie 2 na planszę/ }).click();
   await page.getByRole('button', { name: 'Wygeneruj post' }).click();
-  await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
+  await expectPlanszaLoaded(page);
   const ta = page.getByLabel('Tekst posta');
   expect(await ta.inputValue()).toContain('24 : 18');
   await page.getByRole('button', { name: 'Wygeneruj inaczej' }).click();
-  await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
+  await expectPlanszaLoaded(page);
   await page.getByLabel('Tekst posta').fill('Wygrana 24 : 18 z Sokołem Gdańsk. Dziękujemy za doping.');
   // Ręczna poprawka przeżywa objazd przez formularz (UAT D-03): tekst mieszka w NewPostClient, nie w Preview.
   await page.getByRole('button', { name: 'Popraw dane' }).click();
@@ -32,6 +59,7 @@ test('trener: mecz od formularza do skopiowania tekstu i pobrania planszy', asyn
   await page.getByRole('button', { name: 'Gotowe' }).click();
 
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
+  await expectPlanszaLoaded(page);
   const finalText = await page.getByLabel('Tekst posta').inputValue();
   expect(finalText).toContain('Wygrana 24 : 18 z Sokołem Gdańsk.');
   expect(finalText).toContain('#UKSBanino #GminaŻukowo #RazemTworzymyHistorię');
@@ -87,7 +115,7 @@ test('trener: drużyna spoza listy, powrót po odświeżeniu, usuwanie zdjęcia'
   await expect(page.getByRole('button', { name: /Zdjęcie 2 na planszę/ })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Wygeneruj post' }).click();
-  await expect(page.getByRole('img', { name: 'Plansza' })).toBeVisible({ timeout: 90_000 });
+  await expectPlanszaLoaded(page);
 
   // D-11: za krótki tekst blokuje „Gotowe", ale mówi dlaczego.
   await page.getByLabel('Tekst posta').fill('krótko');

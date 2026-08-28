@@ -1,6 +1,8 @@
-import type { Storage } from './types';
+import type { MemoryStorageLike } from './types';
 
-export class MemoryStorage implements Storage {
+export class MemoryStorage implements MemoryStorageLike {
+  readonly kind = 'memory' as const;
+
   constructor(
     private appUrl: string,
     public readonly key: string,

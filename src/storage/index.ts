@@ -2,7 +2,7 @@ import 'server-only';
 import { getConfig } from '@/config';
 import { MemoryStorage } from './memory';
 import { SupabaseStorage } from './supabase';
-import type { Storage } from './types';
+import type { MemoryStorageLike, Storage } from './types';
 
 export type { Storage } from './types';
 export { SIGNED_URL_TTL_S } from './types';
@@ -19,7 +19,10 @@ export function getStorage(): Storage {
   return g.__kkStorage;
 }
 
-export function getMemoryStorage(): MemoryStorage | null {
+/** Magazyn pamięciowy albo `null` poza trybem mock. Rozpoznanie po `kind`, NIE po `instanceof` —
+ * obiekt na `globalThis` bywa instancją innej kopii klasy niż ta, którą widzi trasa API (patrz
+ * komentarz w `types.ts`, regresja R-01). */
+export function getMemoryStorage(): MemoryStorageLike | null {
   const s = getStorage();
-  return s instanceof MemoryStorage ? s : null;
+  return s.kind === 'memory' ? s : null;
 }
