@@ -47,8 +47,8 @@ describe('generate', () => {
     const d = await draft();
     await generate(d.id);
     for (let i = 0; i < MAX_REGEN; i++) await generate(d.id, 'krócej');
-    await expect(generate(d.id, 'x')).rejects.toThrow(/Limit/);
-    await expect(generate(d.id, 'x')).rejects.toThrow(/kliknij Gotowe/);
+    // Trener nie widzi żadnych „zgłoszeń" — limit dotyczy pojedynczego posta i tak ma brzmieć komunikat.
+    await expect(generate(d.id, 'x')).rejects.toThrow(`Limit ${MAX_REGEN} prób na post — popraw tekst ręcznie albo kliknij Gotowe`);
   });
 
   it('post po „Gotowe" jest zamknięty — regeneracja odrzucona', async () => {

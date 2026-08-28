@@ -43,7 +43,7 @@ export async function generate(id: string, note?: string): Promise<Post> {
   if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
   const isRegen = post.captionAi !== null;
   if (isRegen && post.regenCount >= MAX_REGEN) {
-    throw new AppError(`Limit ${MAX_REGEN} prób na zgłoszenie — popraw tekst ręcznie albo kliknij Gotowe`, 429);
+    throw new AppError(`Limit ${MAX_REGEN} prób na post — popraw tekst ręcznie albo kliknij Gotowe`, 429);
   }
   if ((await repo.sumGenerationsSince(plusHours(nowIso(), -1))) >= MODEL_CALLS_PER_HOUR) {
     throw new AppError('Za dużo prób, spróbuj za chwilę', 429);
