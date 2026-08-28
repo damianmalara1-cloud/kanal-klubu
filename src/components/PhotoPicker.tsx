@@ -78,7 +78,7 @@ export function PhotoPicker({
           {photos.map((p, i) => (
             <div className="thumb-wrap" key={p.key}>
               <button type="button" className="thumb" aria-pressed={i === heroIndex} aria-label={`Zdjęcie ${i + 1} na planszę`} onClick={() => onHero(i)}>
-                <img src={p.url} alt="" />
+                {p.preview ? <img src={p.url} alt="" /> : <span className="thumb-noprev">brak podglądu</span>}
                 {i === heroIndex && <span>plansza</span>}
               </button>
               <button type="button" className="thumb-del" aria-label={`Usuń zdjęcie ${i + 1}`} onClick={() => remove(i)}>

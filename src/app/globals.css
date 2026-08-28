@@ -38,6 +38,7 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb[aria-pressed="true"] { border-color: var(--accent); }
 .thumb span { position: absolute; left: 4px; bottom: 4px; font: 600 10px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; background: var(--accent); color: #fff; padding: 4px 6px; }
+.thumb .thumb-noprev { position: static; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 4px; text-align: center; background: var(--surface-sunken); color: var(--text-secondary); font: 600 10px/1.2 var(--font-text); letter-spacing: .04em; }
 .warn { border: 2px solid #D9A400; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
 .error { border: 2px solid var(--accent); color: var(--text-accent); padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
 .status { font: 600 11px/1 var(--font-text); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border: 1px solid var(--border-strong); white-space: nowrap; align-self: flex-start; }

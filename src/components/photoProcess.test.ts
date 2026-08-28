@@ -5,7 +5,7 @@ type FakeFile = { size: number; name: string };
 const file = (size: number, name = 'zdjecie.jpg'): FakeFile => ({ size, name });
 const makeUrl = (b: Blob) => `blob:${b.size}`;
 /** Fabryka kafla — trzyma kształt `PickedPhoto` w jednym miejscu na wypadek zmiany pól. */
-const pp = (key: string): PickedPhoto => ({ key, blob: new Blob([key]), url: `blob:${key}` });
+const pp = (key: string): PickedPhoto => ({ key, blob: new Blob([key]), url: `blob:${key}`, preview: true });
 
 describe('processFiles', () => {
   it('zatrzymuje się po osiągnięciu limitu max', async () => {
@@ -23,15 +23,24 @@ describe('processFiles', () => {
     expect(photos[0].url).toBe(makeUrl(shrunk));
   });
 
-  it('gdy shrink zawiedzie i plik mieści się w limicie — używa oryginału', async () => {
+  it('gdy shrink zawiedzie i plik mieści się w limicie — używa oryginału, ale ostrzega i oznacza brak podglądu', async () => {
     const shrink = vi.fn(async () => {
       throw new Error('boom');
     });
-    const original = file(50);
+    const original = file(50, 'moze-heic.jpg');
     const { photos, errors } = await processFiles([original], [], shrink, { max: 10, maxBytes: 100, makeUrl });
-    expect(errors).toEqual([]);
+    // Plik zostaje (HEIC z iPhone'a serwer potrafi przyjąć), ale trener musi wiedzieć, że podglądu nie ma —
+    // bez tego plik tekstowy nazwany .jpg wyglądał jak puste zdjęcie i wywracał generację (UAT D-01).
+    expect(errors).toEqual(['Nie udało się podejrzeć zdjęcia moze-heic.jpg — jeśli to nie jest zdjęcie, usuń je']);
     expect(photos).toHaveLength(1);
     expect(photos[0].blob).toBe(original as unknown as Blob);
+    expect(photos[0].preview).toBe(false);
+  });
+
+  it('po udanym shrink kafel ma podgląd', async () => {
+    const shrink = vi.fn(async () => new Blob(['x']));
+    const { photos } = await processFiles([file(10)], [], shrink, { max: 10, maxBytes: 100, makeUrl });
+    expect(photos[0].preview).toBe(true);
   });
 
   it('gdy shrink zawiedzie i plik jest za duży — zgłasza błąd i pomija plik', async () => {
@@ -61,7 +70,7 @@ describe('processFiles', () => {
 
   it('dokłada do istniejącej listy (current) i respektuje jej rozmiar w limicie max', async () => {
     const shrink = vi.fn(async () => new Blob(['x']));
-    const current: PickedPhoto[] = [{ key: 'k1', blob: new Blob(['a']), url: 'blob:a' }];
+    const current: PickedPhoto[] = [pp('k1')];
     const { photos } = await processFiles([file(10), file(10)], current, shrink, { max: 2, maxBytes: 100, makeUrl });
     expect(photos).toHaveLength(2);
     expect(photos[0]).toBe(current[0]);

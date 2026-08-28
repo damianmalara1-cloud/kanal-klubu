@@ -1,4 +1,7 @@
-export type PickedPhoto = { key: string; blob: Blob; url: string };
+/** `preview: false` = przeglądarka nie potrafiła zdekodować pliku (HEIC albo w ogóle nie obraz), więc `url`
+ * nie pokaże miniatury. Plik zostaje w wysyłce (serwer bywa mądrzejszy od przeglądarki), ale kafel musi to
+ * powiedzieć wprost — pusty kwadrat wyglądał jak działające zdjęcie (UAT D-01). */
+export type PickedPhoto = { key: string; blob: Blob; url: string; preview: boolean };
 
 export type ProcessFilesOptions = {
   max: number;
@@ -23,6 +26,7 @@ export async function processFiles<F extends SizedFile>(
   for (const f of files) {
     if (photos.length >= opts.max) break;
     let blob: Blob;
+    let preview = true;
     try {
       blob = await shrink(f);
     } catch {
@@ -30,9 +34,11 @@ export async function processFiles<F extends SizedFile>(
         errors.push(`Nie udało się przetworzyć zdjęcia (za duże)${f.name ? `: ${f.name}` : ''}`);
         continue;
       }
+      errors.push(`Nie udało się podejrzeć zdjęcia${f.name ? ` ${f.name}` : ''} — jeśli to nie jest zdjęcie, usuń je`);
+      preview = false;
       blob = f as unknown as Blob;
     }
-    photos.push({ key: `${Date.now()}-${photos.length}-${Math.random().toString(36).slice(2, 8)}`, blob, url: opts.makeUrl(blob) });
+    photos.push({ key: `${Date.now()}-${photos.length}-${Math.random().toString(36).slice(2, 8)}`, blob, url: opts.makeUrl(blob), preview });
   }
   return { photos, errors };
 }
