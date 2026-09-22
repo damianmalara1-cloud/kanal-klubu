@@ -1,13 +1,8 @@
+import { loginErrorMessage } from '@/admin/login';
 import { adminLoginAction } from './actions';
 
-const MSG: Record<string, string> = {
-  bad: 'Złe hasło',
-  limit: 'Za dużo prób, spróbuj za 15 minut',
-  error: 'Nie udało się sprawdzić logowania, spróbuj za chwilę',
-};
-
 export function LoginForm({ error }: { error?: string }) {
-  const msg = error ? MSG[error] : undefined;
+  const msg = loginErrorMessage(error);
   return (
     <main className="wrap">
       <p className="kicker">UKS Banino · Kanał Klubu</p>

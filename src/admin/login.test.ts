@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { testConfig, resetAdapters } from '@/test/helpers';
 const cfg = vi.hoisted(() => ({ adminPassword: 'haslo-admina-123' }));
 vi.mock('@/config', () => ({ getConfig: () => testConfig({ adminPassword: cfg.adminPassword }) }));
-import { checkLogin, LOGIN_MAX_FAILS } from './login';
+import { checkLogin, loginErrorMessage, LOGIN_MAX_FAILS } from './login';
 import { getEvents } from '@/events';
 import { log } from '@/lib/log';
 
@@ -48,5 +48,22 @@ describe('checkLogin', () => {
     cfg.adminPassword = 'krotkie';
     expect(await checkLogin('krotkie', '1.1.1.1', NOW)).toBe('disabled');
     expect(await getEvents().listRange(...ALL)).toEqual([]);
+  });
+});
+
+describe('loginErrorMessage', () => {
+  it('mapuje znane kody na polskie komunikaty', () => {
+    expect(loginErrorMessage('bad')).toBe('Złe hasło');
+    expect(loginErrorMessage('limit')).toBe('Za dużo prób, spróbuj za 15 minut');
+    expect(loginErrorMessage('error')).toBe('Nie udało się sprawdzić logowania, spróbuj za chwilę');
+  });
+
+  it('nieznane / puste / prototypowe klucze → undefined (Object.hasOwn, nie `in`)', () => {
+    expect(loginErrorMessage(undefined)).toBeUndefined();
+    expect(loginErrorMessage('')).toBeUndefined();
+    expect(loginErrorMessage('__proto__')).toBeUndefined();
+    expect(loginErrorMessage('constructor')).toBeUndefined();
+    expect(loginErrorMessage('toString')).toBeUndefined();
+    expect(loginErrorMessage('xyz')).toBeUndefined();
   });
 });

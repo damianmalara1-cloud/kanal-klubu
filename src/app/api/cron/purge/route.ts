@@ -16,6 +16,6 @@ export async function GET(req: Request) {
     return new Response('unauthorized', { status: 401 });
   }
   const result = await purge();
-  log.info('purge', result as unknown as Record<string, unknown>);
+  log.info('purge', result);
   return Response.json(result);
 }

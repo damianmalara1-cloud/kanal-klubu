@@ -35,7 +35,7 @@ npm run dev
 | `PARTNER_INFO_ENABLED` | tak | `false` | Globalny wyłącznik stopki i pasa logotypów KLUB PRO — zostaje `false` do pisemnej zgody Fundacji LOTTO. |
 | `CRON_SECRET` | tak (chyba że `MOCK_EXTERNAL=true`) | `openssl rand -hex 16` | Sprawdzany w `Authorization: Bearer <CRON_SECRET>` przy wywołaniu crona przez Vercel. |
 | `MOCK_EXTERNAL` | nie | `false` | `true` = adapter pamięciowy zamiast Supabase (dev/test/e2e), auth crona pomijana. |
-| `ADMIN_PASSWORD` | nie (bez niego panel `/admin` jest wyłączony) | — (min. 12 znaków) | Hasło do panelu admina `/admin` (użycie i koszty AI). Ustawiasz sam w Vercelu jako Sensitive; zmiana hasła wylogowuje wszystkie sesje. |
+| `ADMIN_PASSWORD` | nie (bez niego panel `/admin` jest wyłączony) | `openssl rand -base64 18` (min. 12 znaków) | Hasło do panelu admina `/admin` (użycie i koszty AI). Ciasteczko sesji to HMAC kluczowany tym hasłem — musi być wartością losową, wygenerowaną, nie zapamiętywalnym hasłem. Ustawiasz sam w Vercelu jako Sensitive; zmiana hasła wylogowuje wszystkie sesje. |
 
 ### Zmienne środowiskowe — treść `.env.example`
 

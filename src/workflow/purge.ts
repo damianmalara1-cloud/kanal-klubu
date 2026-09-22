@@ -10,7 +10,7 @@ export const EVENT_CONTENT_MAX_DAYS = 8; // siatka bezpieczeństwa: treść nie 
 export const LOGIN_FAILED_KEEP_DAYS = 1; // `admin_login_failed` trzyma IP — potrzebne tylko do limitu prób (15 min)
 export const EVENTS_KEEP_DAYS = 365;
 
-export interface PurgeResult { purged: number; deletedDrafts: number; failed: number; eventsContentCleared: number; eventsDeleted: number }
+export type PurgeResult = { purged: number; deletedDrafts: number; failed: number; eventsContentCleared: number; eventsDeleted: number };
 
 /** Cron raz dziennie: szkice po 24 h znikają w całości, gotowe posty po 7 dniach tracą pliki (rekord zostaje jako log).
  * Błąd na pojedynczym poście (storage albo repo) jest izolowany try/catch per item — nie może zablokować
