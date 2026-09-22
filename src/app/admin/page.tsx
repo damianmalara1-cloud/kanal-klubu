@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isAdmin, isAdminEnabled } from '@/admin/auth';
 import { LoginForm } from './LoginForm';
-import { adminLogoutAction } from './actions';
+import { Dashboard } from './Dashboard';
 
 // force-dynamic → Next wysyła `Cache-Control: private, no-cache, no-store` (spec §7)
 export const dynamic = 'force-dynamic';
@@ -14,11 +14,5 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (!isAdminEnabled()) notFound();
   const sp = await searchParams;
   if (!(await isAdmin())) return <LoginForm error={typeof sp.e === 'string' ? sp.e : undefined} />;
-  return (
-    <main className="wrap">
-      <p className="kicker">UKS Banino · Kanał Klubu</p>
-      <h1>Panel admina</h1>
-      <form action={adminLogoutAction}><button type="submit" className="btn">Wyloguj</button></form>
-    </main>
-  );
+  return <Dashboard sp={sp} />;
 }

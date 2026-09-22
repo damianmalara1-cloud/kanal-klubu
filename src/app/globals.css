@@ -51,3 +51,24 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .note { border-left: 4px solid var(--ink-900); padding: 8px 12px; font-size: 14px; color: var(--text-secondary); }
+
+/* Panel admina */
+.adm-wrap { max-width: 960px; }
+.adm-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0; }
+.adm-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+@media (min-width: 720px) { .adm-kpis { grid-template-columns: repeat(4, 1fr); } }
+.adm-kpi { border: 2px solid var(--ink-900); padding: 12px; }
+.adm-kpi b { display: block; font: 400 24px/1.05 var(--font-display); margin-bottom: 6px; }
+.adm-kpi span { font-size: 13px; color: var(--text-muted); }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+.adm-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.adm-table th, .adm-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-hairline); white-space: nowrap; }
+.adm-table th { font: 600 11px/1 var(--font-text); letter-spacing: .1em; text-transform: uppercase; color: var(--text-secondary); }
+.chip[aria-current] { background: var(--ink-900); color: #fff; border-color: var(--ink-900); }
+.diff { white-space: pre-wrap; border: 1px solid var(--border-hairline); padding: 12px; font-size: 15px; }
+.diff ins { background: #d6f0d6; text-decoration: none; }
+.diff del { background: #f6d5d5; }
+.adm-dl { margin: 0; }
+.adm-dl div { display: flex; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border-hairline); }
+.adm-dl dt { font-weight: 600; min-width: 140px; }
+.adm-dl dd { margin: 0; }
