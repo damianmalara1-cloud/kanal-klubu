@@ -19,6 +19,7 @@ const schema = z.object({
   PARTNER_INFO_ENABLED: bool,
   CRON_SECRET: z.string().default(''),
   MOCK_EXTERNAL: bool,
+  ADMIN_PASSWORD: z.string().default(''),
 }).refine((e) => !(e.NODE_ENV === 'production' && (e.AI_MOCK || e.MOCK_EXTERNAL)), {
   // Mock w produkcji nie wywala się głośno — appka udaje, że działa: posty lądują w pamięci funkcji
   // (giną przy cold starcie), a generator zwraca tekst testowy zamiast modelu. Padamy przy starcie.
@@ -40,6 +41,7 @@ export interface Config {
   partnerInfoEnabled: boolean;
   cronSecret: string;
   mockExternal: boolean;
+  adminPassword: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -58,6 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     partnerInfoEnabled: e.PARTNER_INFO_ENABLED,
     cronSecret: e.CRON_SECRET,
     mockExternal: e.MOCK_EXTERNAL,
+    adminPassword: e.ADMIN_PASSWORD,
   };
 }
 

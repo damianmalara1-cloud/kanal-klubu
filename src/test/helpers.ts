@@ -30,6 +30,7 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     partnerInfoEnabled: false,
     cronSecret: '',
     mockExternal: true,
+    adminPassword: '',
     ...overrides,
   };
 }
