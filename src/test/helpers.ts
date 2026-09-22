@@ -34,9 +34,10 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
   };
 }
 
-/** Kasuje singletony `getRepo()`/`getStorage()` (`globalThis.__kkRepo`/`__kkStorage`) — wywołuj w `beforeEach`,
- * żeby każdy test dostawał świeży `MemoryRepo`/`MemoryStorage` zamiast dzielić stan z poprzednim. */
+/** Kasuje singletony `getRepo()`/`getStorage()`/`getEvents()` (`globalThis.__kkRepo`/`__kkStorage`/`__kkEvents`) — wywołuj w `beforeEach`,
+ * żeby każdy test dostawał świeży `MemoryRepo`/`MemoryStorage`/`MemoryEvents` zamiast dzielić stan z poprzednim. */
 export function resetAdapters(): void {
   delete (globalThis as { __kkRepo?: unknown }).__kkRepo;
   delete (globalThis as { __kkStorage?: unknown }).__kkStorage;
+  delete (globalThis as { __kkEvents?: unknown }).__kkEvents;
 }

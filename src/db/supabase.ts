@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Post } from '@/domain/types';
-import { newId } from '@/lib/ids';
+import { newId, UUID_RE } from '@/lib/ids';
 import { nowIso } from '@/lib/dates';
 import { blankPost, COLS, type NewPost, type PostsRepo } from './types';
 
@@ -8,7 +8,6 @@ const TS_COLS = new Set(['created_at', 'updated_at', 'purge_after', 'purged_at']
 /** `posts.id` to kolumna `uuid` — wartość spoza formatu leci do Postgresa jako błąd składni (22P02) i wraca
  * jako 500, choć znaczy po prostu „nie ma takiego posta". Strażnik zamienia to na zachowanie dla nieznanego id
  * (patrz kontrakt w `memory.test.ts`): `get` → null, `update` → błąd „nie istnieje", `delete` → no-op. */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const toRow = (p: Partial<Post>) => Object.fromEntries(Object.entries(p).map(([k, v]) => [COLS[k as keyof Post], v]));
 const fromRow = (r: Record<string, unknown>): Post =>
   Object.fromEntries(
