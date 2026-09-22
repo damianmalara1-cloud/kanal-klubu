@@ -5,6 +5,7 @@ import { checkFacts } from './factGuard';
 import { parseModelJson, type ModelOut } from './parse';
 import { cleanCaption } from './postprocess';
 import { buildSystemPrompt, buildUserPrompt } from './prompt';
+import type { AiMeter } from './meter';
 
 export interface Generated { caption: string; headline: string; kicker: string; factWarning: string | null }
 
@@ -12,26 +13,26 @@ export interface Generated { caption: string; headline: string; kicker: string; 
 const TOTAL_BUDGET_MS = 45_000;
 const RETRY_RESERVE_MS = 15_000;
 
-async function once(system: string, user: string, deadline: number): Promise<ModelOut> {
+async function once(system: string, user: string, deadline: number, meter?: AiMeter): Promise<ModelOut> {
   try {
-    return parseModelJson(await callModel(system, user));
+    return parseModelJson(await callModel(system, user, { meter }));
   } catch (e) {
     if (Date.now() > deadline - RETRY_RESERVE_MS) throw e;
     log.warn('ai: pierwsza próba nieudana, ponawiam', { err: String(e) });
-    return parseModelJson(await callModel(system, user));
+    return parseModelJson(await callModel(system, user, { meter }));
   }
 }
 
-export async function generateCaption(post: Post, note?: string): Promise<Generated> {
+export async function generateCaption(post: Post, note?: string, meter?: AiMeter): Promise<Generated> {
   const system = buildSystemPrompt();
   const deadline = Date.now() + TOTAL_BUDGET_MS;
 
-  let out = await once(system, buildUserPrompt(post, note), deadline);
+  let out = await once(system, buildUserPrompt(post, note), deadline, meter);
   let caption = cleanCaption(out.caption);
   let warning = checkFacts(post, caption);
 
   if (warning && Date.now() <= deadline - RETRY_RESERVE_MS) {
-    out = await once(system, buildUserPrompt(post, `${note ?? ''}\nPoprzednia wersja pominęła: ${warning}. Popraw to.`.trim()), deadline);
+    out = await once(system, buildUserPrompt(post, `${note ?? ''}\nPoprzednia wersja pominęła: ${warning}. Popraw to.`.trim()), deadline, meter);
     caption = cleanCaption(out.caption);
     warning = checkFacts(post, caption);
   }

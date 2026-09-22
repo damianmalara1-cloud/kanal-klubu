@@ -3,6 +3,7 @@ vi.mock('./client', () => ({ callModel: vi.fn() }));
 import { callModel } from './client';
 import { generateCaption } from './generate';
 import { log } from '@/lib/log';
+import { AiMeter } from './meter';
 import type { Post } from '@/domain/types';
 
 const post = { id: '1', type: 'mecz', author: 'Ania', photos: [], form: { team: null, opponent: 'X', scoreHome: 24, scoreAway: 18, venue: 'dom', venueCity: null, notes: null } } as unknown as Post;
@@ -76,5 +77,12 @@ describe('generateCaption', () => {
     });
     await expect(generateCaption(post)).rejects.toThrow(/Brak JSON/);
     expect(callModel).toHaveBeenCalledTimes(1);
+  });
+
+  it('przekazuje ten sam licznik do każdego wywołania modelu (także ponowienia po złym JSON)', async () => {
+    vi.mocked(callModel).mockResolvedValueOnce('nie json').mockResolvedValueOnce(ok);
+    const meter = new AiMeter();
+    await generateCaption(post, undefined, meter);
+    expect(vi.mocked(callModel).mock.calls.map((c) => c[2]?.meter)).toEqual([meter, meter]);
   });
 });

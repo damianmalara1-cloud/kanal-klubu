@@ -9,6 +9,7 @@ import { getConfig } from '@/config';
 import { log } from '@/lib/log';
 import { AppError } from '@/lib/errors';
 import { callModel } from './client';
+import { AiMeter } from './meter';
 
 // Ścieżka nie-2xx w client.ts realnie loguje log.error (produkcyjnie pożądane) — tłumimy tu, żeby output testów był czysty.
 beforeEach(() => {
@@ -112,5 +113,50 @@ describe('callModel', () => {
     await callModel('s', 'u');
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('licznik: koszt i tokeny z usage odpowiedzi', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'X' } }], usage: { prompt_tokens: 1500, completion_tokens: 300, cost: 0.003 } }),
+    }));
+    const meter = new AiMeter();
+    await callModel('s', 'u', { meter });
+    expect(meter.snapshot()).toEqual({ calls: 1, failedCalls: 0, unknownCostCalls: 0, promptTokens: 1500, completionTokens: 300, costUsd: 0.003 });
+  });
+
+  it('licznik: 200 bez usage.cost → wywołanie bez danych o koszcie, nie 0 po cichu', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'X' } }] }) }));
+    const meter = new AiMeter();
+    await callModel('s', 'u', { meter });
+    expect(meter.snapshot()).toMatchObject({ calls: 1, unknownCostCalls: 1, costUsd: 0 });
+  });
+
+  it('licznik: nie-2xx → failedCalls, bez kosztu', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429, text: () => 'rate limited' }));
+    const meter = new AiMeter();
+    await expect(callModel('s', 'u', { meter })).rejects.toThrow(/429/);
+    expect(meter.snapshot()).toMatchObject({ calls: 1, failedCalls: 1, unknownCostCalls: 0, costUsd: 0 });
+  });
+
+  it('licznik: 402 też liczy się jako odrzucone wywołanie', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 402, text: () => 'insufficient credits' }));
+    const meter = new AiMeter();
+    await expect(callModel('s', 'u', { meter })).rejects.toBeInstanceOf(AppError);
+    expect(meter.snapshot()).toMatchObject({ calls: 1, failedCalls: 1 });
+  });
+
+  it('licznik: timeout / błąd sieci → wywołanie bez danych o koszcie', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(Object.assign(new Error('This operation was aborted'), { name: 'AbortError' })));
+    const meter = new AiMeter();
+    await expect(callModel('s', 'u', { meter })).rejects.toThrow(/aborted/);
+    expect(meter.snapshot()).toMatchObject({ calls: 1, failedCalls: 0, unknownCostCalls: 1 });
+  });
+
+  it('licznik: tryb mock → jedno wywołanie za 0 USD', async () => {
+    vi.mocked(getConfig).mockReturnValueOnce({ aiMock: true, openrouterApiKey: 'k', appUrl: 'https://u', aiModel: 'm' } as unknown as Config);
+    const meter = new AiMeter();
+    await callModel('s', 'u', { meter });
+    expect(meter.snapshot()).toEqual({ calls: 1, failedCalls: 0, unknownCostCalls: 0, promptTokens: 0, completionTokens: 0, costUsd: 0 });
   });
 });
