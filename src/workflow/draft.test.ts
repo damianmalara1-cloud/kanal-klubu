@@ -6,7 +6,8 @@ vi.mock('@/config', () => ({
   getConfig: () => testConfig({ coachNames: ['Ania'], teams: ['młodziczki (2011+)', 'dziewczęta 2013+'], klubProTeams: ['młodziczki (2011+)'] }),
 }));
 
-import { createDraft, attachPhoto, setHeroPhoto, MAX_PHOTOS, MAX_UPLOAD_BYTES } from './draft';
+import { createDraft, attachPhoto, setHeroPhoto, MAX_PHOTOS, MAX_UPLOAD_BYTES, DRAFTS_PER_HOUR_PER_IP } from './draft';
+import { getEvents } from '@/events';
 
 beforeEach(resetAdapters);
 
@@ -96,5 +97,29 @@ describe('attachPhoto', () => {
     const storage = getStorage();
     expect(await storage.get(a.path)).not.toBeNull();
     expect(await storage.get(b.path)).not.toBeNull();
+  });
+});
+
+const allEvents = async () => (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z')).reverse();
+
+describe('dziennik zdarzeń — szkic', () => {
+  it('draft_created, photo_uploaded, hero_set z autorem i postem', async () => {
+    const d = await createDraft(mecz());
+    const img = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000' } }).jpeg().toBuffer();
+    const { path } = await attachPhoto(d.id, img);
+    await setHeroPhoto(d.id, path);
+    const ev = await allEvents();
+    expect(ev.map((e) => e.type)).toEqual(['draft_created', 'photo_uploaded', 'hero_set']);
+    expect(ev[0]).toMatchObject({ author: 'Ania', postId: d.id, meta: { postType: 'mecz' }, content: null });
+    expect(ev[1]).toMatchObject({ author: 'Ania', postId: d.id, meta: { n: 1, bytesIn: img.length } });
+    expect(ev[1].meta.bytesOut).toBeGreaterThan(0);
+    expect(ev[2]).toMatchObject({ author: 'Ania', postId: d.id, meta: { n: 1 } });
+  });
+
+  it('limit szkiców z IP → limit_hit drafts_per_ip (bez posta)', async () => {
+    for (let i = 0; i < DRAFTS_PER_HOUR_PER_IP; i++) await createDraft(mecz());
+    await expect(createDraft(mecz())).rejects.toMatchObject({ status: 429 });
+    const hit = (await allEvents()).find((e) => e.type === 'limit_hit');
+    expect(hit).toMatchObject({ author: 'Ania', postId: null, meta: { limit: 'drafts_per_ip' } });
   });
 });

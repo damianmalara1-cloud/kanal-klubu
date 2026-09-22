@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { getConfig } from '@/config';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
+import { recordEvent } from '@/events';
 import { formTeam, parseForm } from '@/domain/forms';
 import { MAX_INPUT_PIXELS, MAX_PHOTOS, MAX_UPLOAD_BYTES } from '@/domain/limits';
 import { MSG_DRAFT_GONE } from '@/domain/messages';
@@ -25,10 +26,11 @@ export async function createDraft(input: { author: string; type: PostType; form:
   if (!POST_TYPES.includes(input.type)) throw new AppError('Nieznany typ posta', 400);
   const form = parseForm(input.type, input.form);
   if (input.ip && (await repo.countCreatedSince(input.ip, plusHours(nowIso(), -1))) >= DRAFTS_PER_HOUR_PER_IP) {
+    await recordEvent({ type: 'limit_hit', author: input.author, meta: { limit: 'drafts_per_ip' } });
     throw new AppError('Za dużo prób, spróbuj za chwilę', 429);
   }
   const team = formTeam(form);
-  return repo.create({
+  const post = await repo.create({
     author: input.author,
     type: input.type,
     form,
@@ -36,6 +38,8 @@ export async function createDraft(input: { author: string; type: PostType; form:
     partnerInfo: team !== null && c.klubProTeams.includes(team),
     purgeAfter: plusHours(nowIso(), 24),
   });
+  await recordEvent({ type: 'draft_created', author: post.author, postId: post.id, meta: { postType: post.type } });
+  return post;
 }
 
 async function draftOr404(id: string): Promise<Post> {
@@ -72,11 +76,14 @@ export async function attachPhoto(id: string, file: Buffer): Promise<{ path: str
   const path = `${id}/photo-${post.photos.length + 1}-${suffix}.jpg`;
   await getStorage().put(path, jpg, 'image/jpeg');
   const updated = await getRepo().update(id, { photos: [...post.photos, path], heroPhoto: post.heroPhoto ?? path });
+  await recordEvent({ type: 'photo_uploaded', author: post.author, postId: id, meta: { n: updated.photos.length, bytesIn: file.length, bytesOut: jpg.length } });
   return { path, post: updated };
 }
 
 export async function setHeroPhoto(id: string, path: string): Promise<Post> {
   const post = await draftOr404(id);
   if (!post.photos.includes(path)) throw new AppError('Nieznane zdjęcie', 400);
-  return getRepo().update(id, { heroPhoto: path });
+  const updated = await getRepo().update(id, { heroPhoto: path });
+  await recordEvent({ type: 'hero_set', author: post.author, postId: id, meta: { n: post.photos.indexOf(path) + 1 } });
+  return updated;
 }

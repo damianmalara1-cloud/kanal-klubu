@@ -1,11 +1,13 @@
 import { getConfig } from '@/config';
 import { getRepo } from '@/db';
+import { recordEvent } from '@/events';
 import { cleanCaption, finalizeCaption } from '@/ai/postprocess';
 import { MIN_CAPTION } from '@/domain/limits';
 import { MSG_POST_DONE, MSG_POST_NOT_FOUND } from '@/domain/messages';
 import type { Post } from '@/domain/types';
 import { nowIso, plusDays } from '@/lib/dates';
 import { AppError } from '@/lib/errors';
+import { changedPct, countWords } from '@/lib/wordDiff';
 
 export { MIN_CAPTION };
 export const DONE_RETENTION_DAYS = 7; // po decyzji trenera pliki żyją 7 dni (dane dzieci nie leżą bezterminowo)
@@ -23,7 +25,14 @@ export async function finish(id: string, caption: string): Promise<Post> {
   const clean = cleanCaption(caption);
   if (clean.length < MIN_CAPTION) throw new AppError(`Tekst jest za krótki (min. ${MIN_CAPTION} znaków)`, 400);
   const now = nowIso();
-  return repo.update(id, { caption: clean, status: 'done', purgeAfter: plusDays(now, DONE_RETENTION_DAYS) });
+  const done = await repo.update(id, { caption: clean, status: 'done', purgeAfter: plusDays(now, DONE_RETENTION_DAYS) });
+  const ai = post.captionAi ?? '';
+  await recordEvent({
+    type: 'finished', author: post.author, postId: id,
+    meta: { changedPct: changedPct(ai, clean), wordsAi: countWords(ai), wordsFinal: countWords(clean) },
+    content: { captionAi: post.captionAi, captionFinal: clean },
+  });
+  return done;
 }
 
 /** Tekst do skopiowania: caption + hashtagi + stopka KLUB PRO (gdy flaga globalna i post objęty programem). */

@@ -13,6 +13,7 @@ vi.mock('@/config', () => ({
 vi.mock('@/creative', () => ({ renderCreative: vi.fn(async () => Buffer.from('PNG')) }));
 
 import { getRepo } from '@/db';
+import { getEvents } from '@/events';
 import { isDraftGoneMessage } from '@/domain/messages';
 import { renderCreative } from '@/creative';
 import { createDraft } from './draft';
@@ -105,5 +106,33 @@ describe('generate', () => {
     }
     const d = await draft();
     await expect(generate(d.id)).rejects.toThrow(/Za dużo/);
+  });
+});
+
+const allEvents = async () => (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z')).reverse();
+
+describe('dziennik zdarzeń — generacja', () => {
+  it('ai_generated: pierwsza i regeneracja z kosztem, licznikami, notatką i tekstem', async () => {
+    const d = await draft();
+    await generate(d.id);
+    await generate(d.id, 'krócej');
+    const gens = (await allEvents()).filter((e) => e.type === 'ai_generated');
+    expect(gens).toHaveLength(2);
+    expect(gens[0]).toMatchObject({
+      author: 'Ania', postId: d.id, costUsd: 0,
+      meta: { regen: false, regenNo: 0, calls: 1, failedCalls: 0, unknownCostCalls: 0, model: 'anthropic/claude-haiku-4.5', factWarning: false },
+      content: { note: null },
+    });
+    expect(gens[1]).toMatchObject({ meta: { regen: true, regenNo: 1 }, content: { note: 'krócej' } });
+    expect(String(gens[1].content?.caption)).toContain('24 : 18');
+    expect(typeof gens[0].meta.ms).toBe('number');
+  });
+
+  it('limit regeneracji → limit_hit max_regen', async () => {
+    const d = await draft();
+    await generate(d.id);
+    for (let i = 0; i < MAX_REGEN; i++) await generate(d.id, 'x');
+    await expect(generate(d.id, 'x')).rejects.toMatchObject({ status: 429 });
+    expect((await allEvents()).find((e) => e.type === 'limit_hit')).toMatchObject({ author: 'Ania', postId: d.id, meta: { limit: 'max_regen' } });
   });
 });

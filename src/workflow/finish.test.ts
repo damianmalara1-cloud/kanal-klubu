@@ -9,6 +9,8 @@ import { finish, finalText } from './finish';
 import { getRepo } from '@/db';
 import { HASHTAGS, PARTNER_FOOTER } from '@/ai/postprocess';
 import { isDraftGoneMessage } from '@/domain/messages';
+import { getEvents } from '@/events';
+import { changedPct } from '@/lib/wordDiff';
 
 beforeEach(() => { resetAdapters(); cfg.partnerInfoEnabled = false; });
 const mk = () => createDraft({ author: 'Ania', type: 'mecz', ip: null, form: { team: 'młodziczki (2011+)', opponent: 'Sokół', scoreHome: 24, scoreAway: 18, venue: 'dom' } });
@@ -55,5 +57,17 @@ describe('finalText', () => {
     expect(finalText(p)).toBe(`${p.caption}\n\n${HASHTAGS}\n\n${PARTNER_FOOTER}`);
     const off = await getRepo().update(p.id, { partnerInfo: false });
     expect(finalText(off)).toBe(`${p.caption}\n\n${HASHTAGS}`);
+  });
+});
+
+describe('dziennik zdarzeń — finished', () => {
+  it('finished z % zmian i obiema wersjami tekstu', async () => {
+    const d = await mk(); const g = await generate(d.id);
+    const p = await finish(d.id, 'Wygrana 24 : 18. Brawo dziewczyny, dziękujemy za doping!');
+    const e = (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z')).find((x) => x.type === 'finished');
+    expect(e).toMatchObject({ author: 'Ania', postId: d.id, content: { captionAi: g.captionAi, captionFinal: p.caption } });
+    expect(e?.meta.changedPct).toBe(changedPct(g.captionAi!, p.caption!));
+    expect(e?.meta.wordsAi).toBeGreaterThan(0);
+    expect(e?.meta.wordsFinal).toBe(9);
   });
 });

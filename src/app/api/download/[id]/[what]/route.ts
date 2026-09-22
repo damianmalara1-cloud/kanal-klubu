@@ -1,5 +1,6 @@
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
+import { recordEvent } from '@/events';
 import { isValidSecret } from '@/lib/access';
 import { errMessage } from '@/lib/errors';
 import { log } from '@/lib/log';
@@ -28,6 +29,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string; wha
     if (!path) return NOT_FOUND();
     const buf = await getStorage().get(path);
     if (!buf) return NOT_FOUND();
+    await recordEvent({ type: 'downloaded', author: post.author, postId: post.id, meta: { what: part } });
     const day = dayPl(post.createdAt);
     return new Response(new Uint8Array(buf), {
       headers: {
