@@ -138,3 +138,44 @@ test('bez wybranego imienia formularz od razu o tym mówi', async ({ page }) => 
   await expect(alert.getByRole('link', { name: 'Kanał Klubu' })).toHaveAttribute('href', `/t/${SECRET}`);
   await expect(page.getByLabel('Rywal', { exact: true })).toBeVisible(); // formularz zostaje na miejscu
 });
+
+const ADMIN_PW = 'test-admin-password-123';
+
+test('admin: złe hasło, logowanie, trener w tabeli, historia posta z porównaniem tekstu', async ({ page }) => {
+  // Post trenera do „Gotowe" z ręczną poprawką tekstu — źródło zdarzeń dla panelu.
+  await page.goto(`/t/${SECRET}`);
+  await page.getByRole('button', { name: 'Ania' }).click();
+  await page.getByRole('link', { name: 'Mecz' }).click();
+  await page.getByLabel('Drużyna').selectOption('młodziczki (2011+)');
+  await page.getByLabel('Rywal', { exact: true }).fill('Sokół Gdańsk');
+  await page.getByLabel('Bramki UKS Banino').fill('24');
+  await page.getByLabel('Bramki rywala').fill('18');
+  await page.getByRole('button', { name: 'Wygeneruj post' }).click();
+  await expectPlanszaLoaded(page);
+  await page.getByLabel('Tekst posta').fill('Wygrana 24 : 18 z Sokołem Gdańsk. Dziękujemy kibicom za doping.');
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+  await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
+
+  // Logowanie: najpierw złe hasło, potem dobre.
+  await page.goto('/admin');
+  await page.getByLabel('Hasło').fill('zle-haslo-do-panelu');
+  await page.getByRole('button', { name: 'Zaloguj' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Złe hasło' })).toBeVisible();
+  await page.getByLabel('Hasło').fill(ADMIN_PW);
+  await page.getByRole('button', { name: 'Zaloguj' }).click();
+  await expect(page.getByRole('button', { name: 'Wyloguj' })).toBeVisible();
+
+  // Pulpit: trener w tabeli.
+  await expect(page.getByRole('row', { name: /Ania/ })).toBeVisible();
+
+  // Oś przefiltrowana na „Gotowe" → najnowszy post → porównanie tekstu z dopisanymi słowami.
+  await page.getByRole('link', { name: 'Gotowe', exact: true }).click();
+  await page.getByRole('link', { name: '→ post' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Porównanie tekstu' })).toBeVisible();
+  await expect(page.locator('.diff ins').filter({ hasText: 'kibicom' })).toBeVisible();
+
+  // Wylogowanie wraca do formularza.
+  await page.goto('/admin');
+  await page.getByRole('button', { name: 'Wyloguj' }).click();
+  await expect(page.getByLabel('Hasło')).toBeVisible();
+});

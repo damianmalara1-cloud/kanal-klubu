@@ -24,6 +24,7 @@ export default defineConfig({
       TEAMS: 'młodziczki (2011+);młodzicy (2011+);dziewczęta 2013+',
       KLUB_PRO_TEAMS: 'młodziczki (2011+);młodzicy (2011+)',
       PARTNER_INFO_ENABLED: 'false',
+      ADMIN_PASSWORD: 'test-admin-password-123',
     },
   },
 });

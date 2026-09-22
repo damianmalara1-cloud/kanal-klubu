@@ -58,6 +58,15 @@ MOCK_EXTERNAL=false
 ADMIN_PASSWORD=
 ```
 
+## Panel admina
+
+`/admin` — hasło z `ADMIN_PASSWORD` (min. 12 znaków; bez niego trasy `/admin*` zwracają 404). Po zalogowaniu ciasteczko `kk_admin` na 30 dni (HttpOnly, SameSite=Strict, ścieżka `/admin`); zmiana hasła w Vercelu wylogowuje wszystkie sesje. Po 5 błędnych próbach z jednego IP logowanie blokuje się na 15 minut.
+
+- **Pulpit:** koszt AI miesiąca (USD + ≈ zł po kursie NBP), prognoza na koniec miesiąca, gotowe posty i porzucone szkice, generacje i błędy AI, tabela per trener, oś zdarzeń z filtrami (`?m=YYYY-MM&a=<trener>&t=<typ>`).
+- **Historia posta** (`/admin/post/<id>`): zdarzenia z kosztem, porównanie ostatniej wersji AI z tekstem opublikowanym, wersje z regeneracji i notatki trenera.
+- **Źródło danych:** tabela `events` (`supabase/migrations/0002_events.sql`). Koszt = `usage.cost` z odpowiedzi OpenRoutera; wywołania bez tej informacji (timeout, brak pola) liczone osobno jako „bez danych o koszcie".
+- **Retencja** (cron `/api/cron/purge`): treść zdarzeń (teksty, notatki) znika razem z postem — szkic po 24 h, gotowy po 7 dniach, najpóźniej po 8 dniach; nieudane logowania (z IP) po 1 dniu; wszystkie zdarzenia po 365 dniach.
+
 ## Produkcja
 
 Vercel (projekt `uks-kanal-klubu`) + Supabase (projekt `uks-kanal-klubu`, region EU). Deploy: `vercel --prod`. Cron: `/api/cron/purge` codziennie o 03:00 UTC (`vercel.json`), Vercel dołącza `Authorization: Bearer <CRON_SECRET>` sam.
