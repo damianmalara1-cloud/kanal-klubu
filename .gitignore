@@ -51,3 +51,6 @@ src/creative/assets.generated.ts
 tests/e2e/fixtures/
 /test-results/
 /playwright-report/
+
+.vercel
+supabase/.temp/

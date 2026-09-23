@@ -22,6 +22,13 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tile { display: flex; align-items: flex-end; min-height: 120px; padding: 14px; border: 2px solid var(--ink-900); font: 400 28px/0.95 var(--font-display); text-transform: uppercase; color: var(--text-primary); text-decoration: none; }
 .tile:active { background: var(--surface-sunken); }
+.cal-entry { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 24px; padding: 14px 16px; min-height: 64px; background: var(--ink-900); color: #fff; text-decoration: none; }
+.cal-entry:active { background: var(--ink-700); }
+.cal-entry:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.cal-entry-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cal-entry-title { font: 400 26px/1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.cal-entry-sub { font: 600 11px/1.2 var(--font-text); letter-spacing: .08em; text-transform: uppercase; color: var(--grey-300); }
+.cal-entry-arrow { flex: none; font: 400 30px/1 var(--font-display); color: var(--red-400); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 16px; border: 2px solid var(--border-strong); border-radius: var(--radius-pill); font: 600 13px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; background: transparent; color: var(--text-secondary); cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: #fff; }

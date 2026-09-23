@@ -52,10 +52,14 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
   return (
     <main className="wrap">
       <p className="kicker">UKS Banino · Kanał Klubu</p>
+      <Link className="cal-entry" href={`/t/${secret}/kalendarz`}>
+        <span className="cal-entry-text">
+          <span className="cal-entry-title">Kalendarz klubu</span>
+          <span className="cal-entry-sub">Treningi · mecze · turnieje wszystkich grup</span>
+        </span>
+        <span className="cal-entry-arrow" aria-hidden="true">→</span>
+      </Link>
       <h1>Nowy post</h1>
-      <div className="tiles" style={{ marginBottom: 16 }}>
-        <Link className="tile cal-tile" href={`/t/${secret}/kalendarz`}>Kalendarz</Link>
-      </div>
       <h2>Kto pisze?</h2>
       <div className="chips" role="group" aria-label="Kto pisze">
         {names.map((n) => (
