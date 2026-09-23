@@ -24,6 +24,8 @@ export interface CalEventMeta {
   scope?: 'one' | 'following';
   count?: number;
   changes?: Record<string, { from: unknown; to: unknown }>;
+  /** Seria przerwana w połowie (błąd zapisu na którymś wierszu) — `count` liczy tylko wiersze zapisane do awarii. */
+  partial?: boolean;
 }
 
 export type Json = Record<string, unknown>;

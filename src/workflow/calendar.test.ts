@@ -59,6 +59,32 @@ describe('updateEvent', () => {
     expect(u.count).toBe(1);
     expect((await evTypes()).at(-1)).toBe('cal_updated');
   });
+  it('scope following: changes liczone wg WŁASNEJ daty wiersza, nie daty z formularza', async () => {
+    const r = await createSeries({ ...T, date: '2026-09-29' }, { weekdays: [2], until: '2026-10-20' }, 'Ania');
+    const rows = await getCalendar().listSeriesFrom(r.seriesId, '2000-01-01T00:00:00.000Z');
+    // Data w formularzu jest celowo błędna (grudzień) — wiersze mają zostać na swoich datach, a `changes`
+    // ma pokazywać godzinę przeliczoną na datę WIERSZA (06.10), nie datę z formularza.
+    const u = await updateEvent(rows[1].id, { ...T, date: '2026-12-24', startTime: '17:00' }, 'Ania', 'following');
+    expect(u.event.startsAt).toBe('2026-10-06T15:00:00.000Z');
+    const ev = (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z'))[0];
+    expect(ev.type).toBe('cal_series_updated');
+    expect((ev.meta.changes as Record<string, { from: unknown; to: unknown }>).startsAt.to).toBe('2026-10-06T15:00:00.000Z');
+  });
+  it('scope following: awaria w trakcie serii zapisuje częściowy postęp (partial) i przerywa', async () => {
+    const r = await createSeries({ ...T, date: '2026-09-29' }, { weekdays: [2], until: '2026-10-20' }, 'Ania');
+    const rows = await getCalendar().listSeriesFrom(r.seriesId, '2000-01-01T00:00:00.000Z');
+    const repo = getCalendar();
+    const orig = repo.update.bind(repo);
+    let n = 0;
+    vi.spyOn(repo, 'update').mockImplementation(async (...args: Parameters<typeof repo.update>) => {
+      n++;
+      if (n === 2) throw new Error('db');
+      return orig(...args);
+    });
+    await expect(updateEvent(rows[0].id, { ...T, place: 'Hala C' }, 'Ania', 'following')).rejects.toThrow('db');
+    const ev = (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z'))[0];
+    expect(ev).toMatchObject({ type: 'cal_series_updated', meta: { count: 1, partial: true } });
+  });
 });
 
 describe('deleteEvent / restore', () => {
@@ -81,5 +107,13 @@ describe('diffFields', () => {
   it('porównuje płytko, tablice i obiekty przez JSON', () => {
     const before = { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania'], details: {} } as never;
     expect(diffFields(before, { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: 'H', coaches: ['Ania'], details: {} })).toEqual({ place: { from: null, to: 'H' } });
+  });
+  it('details z inną kolejnością kluczy (jsonb z Postgresa) nie tworzy fałszywej zmiany', () => {
+    const before = { type: 'mecz', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { opponent: 'X', venue: 'dom' } } as never;
+    expect(diffFields(before, { type: 'mecz', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { venue: 'dom', opponent: 'X' } })).toEqual({});
+  });
+  it('coaches w innej kolejności nie tworzy fałszywej zmiany', () => {
+    const before = { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania', 'Krzysiek'], details: {} } as never;
+    expect(diffFields(before, { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Krzysiek', 'Ania'], details: {} })).toEqual({});
   });
 });

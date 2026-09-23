@@ -39,7 +39,22 @@ export async function createSeries(raw: unknown, rawSeries: unknown, by: string)
 }
 
 const KEYS: (keyof CalPatchFields)[] = ['type', 'team', 'title', 'startsAt', 'endsAt', 'allDay', 'place', 'coaches', 'details'];
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Forma porównywalna niezależnie od kolejności: tablice sortowane (kolejność `coaches` nie ma znaczenia),
+ * klucze obiektów sortowane (jsonb z Postgresa nie gwarantuje kolejności `details`) — inaczej `same()` widziałby
+ * zmianę tam, gdzie zmieniła się tylko kolejność, nie treść. */
+type Canon = string | number | boolean | null | Canon[] | { [k: string]: Canon };
+function canon(v: unknown): Canon {
+  if (Array.isArray(v)) return v.map(canon).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    const out: Record<string, Canon> = {};
+    for (const k of Object.keys(o).sort()) out[k] = canon(o[k]);
+    return out;
+  }
+  return v as Canon;
+}
+const same = (a: unknown, b: unknown) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 export function diffFields(before: CalEvent, after: CalPatchFields): Record<string, { from: unknown; to: unknown }> {
   const out: Record<string, { from: unknown; to: unknown }> = {};
   for (const k of KEYS) if (!same(before[k], after[k])) out[k] = { from: before[k], to: after[k] };
@@ -50,18 +65,32 @@ export async function updateEvent(id: string, raw: unknown, by: string, scope: S
   const repo = getCalendar();
   const before = await getEvent(id);
   const input = parseCalInput(raw, ctx());
-  const fields = inputToFields(input);
-  const changes = diffFields(before, fields);
   if (scope === 'following' && before.seriesId) {
+    // `changes` liczone względem pól przeliczonych na WŁASNĄ datę edytowanego wiersza (nie `input.date`) —
+    // przy zakresie „następne" data z formularza jest ignorowana dla każdego wiersza serii (patrz pętla niżej),
+    // więc dziennik ma pokazywać to, co faktycznie się zmieniło, nie datę, która nigdzie nie trafiła.
+    const ownFields = fieldsForDate(input, isoToLocal(before.startsAt).date);
+    const changes = diffFields(before, ownFields);
     const rows = await repo.listSeriesFrom(before.seriesId, before.startsAt);
-    for (const r of rows) {
-      // Ta sama data co dotąd, nowe godziny/pola — `fieldsForDate` dokłada godziny z formularza do daty wiersza.
-      const { date } = isoToLocal(r.startsAt);
-      await repo.update(r.id, fieldsForDate(input, date), by);
+    let done = 0;
+    try {
+      for (const r of rows) {
+        // Ta sama data co dotąd, nowe godziny/pola — `fieldsForDate` dokłada godziny z formularza do daty wiersza.
+        const { date } = isoToLocal(r.startsAt);
+        await repo.update(r.id, fieldsForDate(input, date), by);
+        done++;
+      }
+    } catch (e) {
+      // Seria przerwana w połowie: wiersze do `done` już zapisane, reszta nie — dziennik ma to odzwierciedlać
+      // (`partial: true`), zamiast milczeć albo kłamać liczbą wszystkich wierszy. Błąd leci dalej do wywołującego.
+      await rec('cal_series_updated', by, metaOf(before, { scope, count: done, changes, partial: true }));
+      throw e;
     }
     await rec('cal_series_updated', by, metaOf(before, { scope, count: rows.length, changes }));
     return { event: (await repo.get(id))!, count: rows.length };
   }
+  const fields = inputToFields(input);
+  const changes = diffFields(before, fields);
   const dateChanged = isoToLocal(before.startsAt).date !== input.date;
   const patch: CalPatch = { ...fields, ...(dateChanged && before.seriesId ? { seriesId: null } : {}) };
   const event = await repo.update(id, patch, by);
