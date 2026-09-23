@@ -25,6 +25,7 @@ export default defineConfig({
       KLUB_PRO_TEAMS: 'młodziczki (2011+);młodzicy (2011+)',
       PARTNER_INFO_ENABLED: 'false',
       ADMIN_PASSWORD: 'test-admin-password-123',
+      SEASON_END: '2027-06-30',
     },
   },
 });
