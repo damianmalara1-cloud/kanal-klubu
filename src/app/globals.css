@@ -95,3 +95,12 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .cal-undo { position: sticky; bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: var(--ink-900); color: #fff; }
 .cal-undo button { color: #fff; background: transparent; border: 2px solid #fff; min-height: 44px; padding: 0 14px; font: 700 13px/1 var(--font-text); text-transform: uppercase; }
 .cal-danger { border-color: var(--accent); color: var(--text-accent); }
+
+/* Kalendarz — widok miesiąca */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-wd { padding: 4px; text-align: center; font: 600 11px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); }
+.cal-cell { min-height: 56px; padding: 4px; border: 1px solid var(--border-hairline); text-decoration: none; color: var(--text-primary); font-size: 13px; }
+.cal-out { opacity: .4; }
+.cal-cell-dots { display: block; margin-top: 4px; }
+.cal-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 2px 2px 0 0; }
+.cal-cell-dots b { font: 600 10px/1 var(--font-text); vertical-align: middle; }
