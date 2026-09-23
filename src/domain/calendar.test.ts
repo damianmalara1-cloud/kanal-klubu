@@ -31,6 +31,9 @@ describe('parseCalInput', () => {
     expect(() => parseCalInput({ ...trening, coaches: ['Obcy'] }, ctx)).toThrow(/Trener/);
     expect(() => parseCalInput({ ...trening, notes: 'x'.repeat(301) }, ctx)).toThrow(/Uwagi/);
   });
+  it('nieznany typ wydarzenia → błąd z etykietą „Typ wydarzenia"', () => {
+    expect(() => parseCalInput({ ...trening, type: 'zly' }, ctx)).toThrow(/Typ wydarzenia/);
+  });
 });
 
 describe('seriesDates', () => {
@@ -44,6 +47,7 @@ describe('seriesDates', () => {
   });
   it('parseSeriesInput: dni 1–7 bez duplikatów, until w formacie daty', () => {
     expect(parseSeriesInput({ weekdays: ['2', '4', '2'], until: '2027-06-30' })).toEqual({ weekdays: [2, 4], until: '2027-06-30' });
-    expect(() => parseSeriesInput({ weekdays: [8], until: '2027-06-30' })).toThrow();
+    expect(() => parseSeriesInput({ weekdays: [8], until: '2027-06-30' })).toThrow(/Dni tygodnia/);
+    expect(() => parseSeriesInput({ weekdays: [1], until: 'x' })).toThrow(/Do/);
   });
 });

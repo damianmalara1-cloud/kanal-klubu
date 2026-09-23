@@ -23,9 +23,9 @@ export const NOTES_MAX = 300;
 /** Etykiety pól po polsku — do komunikatów walidacji (`lib/errors.ts` czyta `FIELD_LABEL` z `forms.ts`; kalendarz
  * ma własne pola, więc `actionFail` dostaje już gotowy `AppError`, patrz `parseCalInput`). */
 export const CAL_FIELD_LABEL: Record<string, string> = {
-  team: 'Drużyna', date: 'Data', endDate: 'Data końca', startTime: 'Początek', endTime: 'Koniec', place: 'Miejsce',
-  coaches: 'Trener', notes: 'Uwagi', opponent: 'Rywal', venue: 'Gdzie', matchTime: 'Godzina meczu', name: 'Nazwa turnieju',
-  title: 'Tytuł', weekdays: 'Dni tygodnia', until: 'Do',
+  type: 'Typ wydarzenia', team: 'Drużyna', date: 'Data', endDate: 'Data końca', startTime: 'Początek', endTime: 'Koniec',
+  place: 'Miejsce', coaches: 'Trener', notes: 'Uwagi', opponent: 'Rywal', venue: 'Gdzie', matchTime: 'Godzina meczu',
+  name: 'Nazwa turnieju', title: 'Tytuł', allDay: 'Cały dzień', weekdays: 'Dni tygodnia', until: 'Do',
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/, TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -49,13 +49,17 @@ export type CalInput = z.infer<typeof schema>;
 
 const fail = (field: string, what: string): never => { throw new AppError(`${CAL_FIELD_LABEL[field] ?? field}: ${what}`); };
 
+/** Pierwszy błąd zod → `fail(pole, opis)` z polską etykietą — współdzielone przez `parseCalInput` i `parseSeriesInput`,
+ * żeby żaden z nich nie wyciekał surowego `ZodError` (angielski, techniczne nazwy pól) do trenera. */
+const failFirstIssue = (error: z.ZodError): never => {
+  const i = error.issues[0];
+  return fail(String(i.path[0] ?? 'formularz'), i.code === 'too_big' ? `do ${String((i as { maximum?: unknown }).maximum)} znaków` : 'sprawdź wartość');
+};
+
 /** Walidacja + reguły spoza zod: drużyna z listy (wymagana poza „inne"), trenerzy z listy, koniec po początku. */
 export function parseCalInput(raw: unknown, ctx: { teams: string[]; coachNames: string[] }): CalInput {
   const r = schema.safeParse(raw);
-  if (!r.success) {
-    const i = r.error.issues[0];
-    return fail(String(i.path[0] ?? 'formularz'), i.code === 'too_big' ? `do ${String((i as { maximum?: unknown }).maximum)} znaków` : 'sprawdź wartość');
-  }
+  if (!r.success) return failFirstIssue(r.error);
   const v = r.data;
   if (v.team === null && v.type !== 'inne') fail('team', 'wybierz drużynę');
   if (v.team !== null && !ctx.teams.includes(v.team)) fail('team', 'spoza listy');
@@ -93,7 +97,10 @@ const seriesSchema = z.object({
   until: str.regex(DATE),
 });
 export type SeriesInput = z.infer<typeof seriesSchema>;
-export const parseSeriesInput = (raw: unknown): SeriesInput => seriesSchema.parse(raw);
+export function parseSeriesInput(raw: unknown): SeriesInput {
+  const r = seriesSchema.safeParse(raw);
+  return r.success ? r.data : failFirstIssue(r.error);
+}
 
 /** Daty terminów serii: od `date` (włącznie) do `until` (włącznie), tylko wybrane dni tygodnia. Czysta arytmetyka
  * kalendarzowa — godziny dokłada `localToIso` per termin, więc zmiana czasu nie przesuwa treningów. */
