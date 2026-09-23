@@ -1,5 +1,5 @@
-import type { CalType } from '@/domain/calendar';
-import { weekdayOf } from '@/lib/dates';
+import type { CalEvent, CalType } from '@/domain/calendar';
+import { addDays, isoToLocal, weekdayOf } from '@/lib/dates';
 
 /** Stan kontrolowanego formularza wydarzenia — nadzbiór pól wszystkich typów (zamiast osobnego typu na
  * `mecz`/`turniej`/`inne`, żeby przełączanie typu w `EventForm` nie gubiło już wpisanych wartości pól
@@ -38,4 +38,21 @@ export function toRaw(v: FormValue): Record<string, unknown> {
     case 'inne': return { ...base, title: v.title };
     default: return base;
   }
+}
+
+/** Formularz z istniejącego wydarzenia — odwrotność `toRaw`: godziny lokalne z ISO; dla całodniowych `endsAt`
+ * w bazie jest północą DNIA PO ostatnim dniu wydarzenia, więc `endDate` cofa się o jeden dzień. Seria zawsze
+ * wyłączona (`emptyForm` ją zeruje) — edycja pojedynczego wydarzenia nie tworzy nowej serii, `Scope` w
+ * `updateEventAction` decyduje, ile wierszy serii dostanie zmianę. */
+export function fromEvent(e: CalEvent, seasonEnd: string): FormValue {
+  const s = isoToLocal(e.startsAt), en = isoToLocal(e.endsAt);
+  const endDate = e.allDay ? addDays(en.date, -1) : en.date;
+  return {
+    ...emptyForm(e.type, s.date, seasonEnd),
+    team: e.team ?? '', endDate: endDate === s.date ? '' : endDate,
+    startTime: e.allDay ? '' : s.time, endTime: e.allDay ? '' : en.time, allDay: e.allDay,
+    place: e.place ?? '', coaches: e.coaches, notes: e.details.notes ?? '',
+    opponent: e.details.opponent ?? '', venue: e.details.venue ?? 'dom', matchTime: e.details.matchTime ?? '',
+    name: e.type === 'turniej' ? e.title : '', title: e.type === 'inne' ? e.title : '',
+  };
 }
