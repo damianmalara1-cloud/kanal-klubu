@@ -1,11 +1,30 @@
+import type { CalType } from '@/domain/calendar';
+
 export type EventType =
   | 'draft_created' | 'photo_uploaded' | 'hero_set' | 'ai_generated' | 'ai_failed'
-  | 'finished' | 'downloaded' | 'limit_hit' | 'admin_login' | 'admin_login_failed';
+  | 'finished' | 'downloaded' | 'limit_hit' | 'admin_login' | 'admin_login_failed'
+  | 'cal_created' | 'cal_series_created' | 'cal_updated' | 'cal_series_updated'
+  | 'cal_deleted' | 'cal_series_deleted' | 'cal_restored';
 
 export const EVENT_TYPES: EventType[] = [
   'draft_created', 'photo_uploaded', 'hero_set', 'ai_generated', 'ai_failed',
   'finished', 'downloaded', 'limit_hit', 'admin_login', 'admin_login_failed',
+  'cal_created', 'cal_series_created', 'cal_updated', 'cal_series_updated',
+  'cal_deleted', 'cal_series_deleted', 'cal_restored',
 ];
+
+/** `meta` zdarzeń `cal_*` — ustala `calendar/*` (Task 5), konsumuje `admin/format.ts`. */
+export interface CalEventMeta {
+  eventId: string;
+  seriesId?: string;
+  type: CalType;
+  team: string | null;
+  title: string;
+  startsAt: string;
+  scope?: 'one' | 'following';
+  count?: number;
+  changes?: Record<string, { from: unknown; to: unknown }>;
+}
 
 export type Json = Record<string, unknown>;
 
