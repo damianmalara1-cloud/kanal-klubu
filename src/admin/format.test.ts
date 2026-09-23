@@ -61,4 +61,9 @@ describe('eventText — kalendarz', () => {
     const m = { ...base, count: 3, changes: { place: { from: null, to: 'Hala B' } }, partial: true };
     expect(eventText(cal('cal_series_updated', m))).toBe('Zmiana 3 terminów serii: trening młodzicy (2011+), od wt 29.09 · miejsce — → Hala B · przerwane');
   });
+  it('startsAt/endsAt na inny dzień lokalny pokazuje datę i godzinę po obu stronach (nie samą godzinę)', () => {
+    // wt 29.09 16:30 → śr 30.09 16:30 — sama godzina wyglądałaby jak brak zmiany.
+    const m = { ...base, changes: { startsAt: { from: '2026-09-29T14:30:00.000Z', to: '2026-09-30T14:30:00.000Z' } } };
+    expect(eventText(cal('cal_updated', m))).toBe('Zmiana: trening młodzicy (2011+), wt 29.09 · początek wt 29.09 16:30 → śr 30.09 16:30');
+  });
 });

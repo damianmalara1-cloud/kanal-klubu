@@ -13,7 +13,7 @@ describe('/api/ics', () => {
     expect((await call(S, 'nieznana.ics')).status).toBe(404);
     expect((await call(S, 'klub')).status).toBe(404);
   });
-  it('klub.ics: nagłówki, wszystkie drużyny, bez kosza; drużyna: tylko jej wydarzenia', async () => {
+  it('klub.ics: nagłówki, wszystkie drużyny, bez kosza; drużyna: jej wydarzenia + klubowe (I6)', async () => {
     const a = await createEvent({ type: 'trening', team: 'młodziczki (2011+)', date: '2026-10-01', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] }, 'Ania');
     const b = await createEvent({ type: 'inne', team: 'B', title: 'Sparing', date: '2026-10-02', startTime: '16:30', endTime: '18:00', coaches: [] }, 'Ania');
     await deleteEvent(b.id, 'Ania', 'one');
@@ -25,8 +25,9 @@ describe('/api/ics', () => {
     expect(r.headers.get('content-disposition')).toBe('inline; filename="uks-banino-klub.ics"');
     const body = await r.text();
     expect(body).toContain(`UID:${a.id}@`); expect(body).not.toContain(`UID:${b.id}@`); expect(body).toContain(`UID:${c.id}@`);
+    // Filtr drużyny musi dociągnąć też wydarzenia całego klubu (`c`, team=null) — nie tylko swoje (I6).
     const t = await (await call(S, 'mlodziczki-2011.ics')).text();
-    expect(t).toContain(`UID:${a.id}@`); expect(t).not.toContain(`UID:${c.id}@`); expect(t).toContain('X-WR-CALNAME:UKS Banino · młodziczki (2011+)');
+    expect(t).toContain(`UID:${a.id}@`); expect(t).toContain(`UID:${c.id}@`); expect(t).not.toContain(`UID:${b.id}@`); expect(t).toContain('X-WR-CALNAME:UKS Banino · młodziczki (2011+)');
   });
   it('awaria bazy → 503 z Retry-After', async () => {
     vi.spyOn(getCalendar(), 'listRange').mockRejectedValueOnce(new Error('down'));

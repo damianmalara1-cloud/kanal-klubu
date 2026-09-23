@@ -23,7 +23,9 @@ export function TeamFilter({ secret, date, teams, team, hasParam }: { secret: st
       <div className="chips" role="group" aria-label="Filtr drużyny">
         <Link className="chip" href={href('')} aria-current={current === '' ? 'true' : undefined}>Wszystkie</Link>
         {teams.map((t) => <Link key={t} className="chip" href={href(t)} aria-current={current === t ? 'true' : undefined}>{t}</Link>)}
-        <Link className="chip" href={href('klub')} aria-current={current === 'klub' ? 'true' : undefined}>cały klub</Link>
+        {/* Wartość URL zostaje 'klub' (linki/localStorage/ics), ale filtr per drużyna (I6) i tak dociąga
+            wydarzenia całego klubu — ten chip filtruje je z powrotem, więc nazwa musi to odróżniać. */}
+        <Link className="chip" href={href('klub')} aria-current={current === 'klub' ? 'true' : undefined}>tylko klubowe</Link>
       </div>
       <ul className="cal-legend" aria-label="Kolory drużyn">
         {teams.map((t) => <li key={t}><i style={{ background: teamColor(t, teams).bg }} />{t}</li>)}

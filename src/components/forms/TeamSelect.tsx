@@ -10,6 +10,7 @@ export function TeamSelect({
   onChange,
   teams,
   allowAll = false,
+  allowOther = true,
   required = false,
   id = 'team',
 }: {
@@ -17,6 +18,11 @@ export function TeamSelect({
   onChange: (v: string) => void;
   teams: string[];
   allowAll?: boolean;
+  /** Kalendarz (I3) woła z `false`: drużyna wydarzenia musi zostać z listy `TEAMS`, bo od niej zależy filtr/kolor/
+   * `.ics` — wolny tekst tworzyłby drużyny, których żadna z tych rzeczy nie rozpoznaje. Formularze postów
+   * (mecz/turniej/ogłoszenie/sukces) zostają na domyślnym `true` — tam wolny tekst opisuje kadrę/oldboyów
+   * spoza `TEAMS`, co jest zamierzone (patrz `required` niżej). */
+  allowOther?: boolean;
   /** Mecz/turniej/sukces: drużyna jest wymagana, bo to jedyne pole decydujące o stopce i pasie KLUB PRO
    * (§8 umowy z Fundacją). Ogłoszenie zostaje opcjonalne — „cały klub" to legalny wybór. */
   required?: boolean;
@@ -26,9 +32,9 @@ export function TeamSelect({
   // tekstu jest WYPROWADZONY z `value` — wartość spoza `teams` (np. odtworzona z localStorage) sama włącza
   // pole tekstowe. `freeMode` trzyma wybór trenera w chwili, gdy pole jest jeszcze puste.
   // Uwaga: wolny tekst z założenia nie trafi do KLUB_PRO_TEAMS, więc taki post nie dostanie stopki programu.
-  const outside = value !== '' && !teams.includes(value);
+  const outside = allowOther && value !== '' && !teams.includes(value);
   const [freeMode, setFreeMode] = useState(false);
-  const free = freeMode || outside;
+  const free = allowOther && (freeMode || outside);
   return (
     <>
       <div className="field">
@@ -49,7 +55,7 @@ export function TeamSelect({
               {t}
             </option>
           ))}
-          <option value={OTHER}>inna</option>
+          {allowOther && <option value={OTHER}>inna</option>}
         </select>
       </div>
       {free && (

@@ -28,6 +28,11 @@ describe('createEvent / createSeries', () => {
     const rows = await getCalendar().listSeriesFrom(r.seriesId, '2000-01-01T00:00:00.000Z');
     expect(rows.map((x) => x.startsAt)).toEqual(['2026-10-20T14:30:00.000Z', '2026-10-27T15:30:00.000Z']);
   });
+  it('seria przez zmianę czasu 28.03.2027 (do przodu): godzina lokalna stała', async () => {
+    const r = await createSeries({ ...T, date: '2027-03-23' }, { weekdays: [2], until: '2027-03-30' }, 'Ania');
+    const rows = await getCalendar().listSeriesFrom(r.seriesId, '2000-01-01T00:00:00.000Z');
+    expect(rows.map((x) => x.startsAt)).toEqual(['2027-03-23T15:30:00.000Z', '2027-03-30T14:30:00.000Z']);
+  });
 });
 
 describe('updateEvent', () => {
@@ -85,6 +90,13 @@ describe('updateEvent', () => {
     const ev = (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z'))[0];
     expect(ev).toMatchObject({ type: 'cal_series_updated', meta: { count: 1, partial: true } });
   });
+  it('drużyna wycofana z TEAMS (I3) nie blokuje edycji pozostałych pól tego wydarzenia', async () => {
+    // Wydarzenie stworzone bezpośrednio w repo (nie przez createEvent/parseCalInput), team spoza konfiguracji
+    // testu (`teams: ['A', 'B']`) — symuluje drużynę usuniętą z `TEAMS` już PO utworzeniu terminu.
+    const e = await getCalendar().create({ type: 'trening', team: 'Stara', title: 'Trening', startsAt: '2026-09-29T14:30:00.000Z', endsAt: '2026-09-29T16:00:00.000Z', allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
+    const u = await updateEvent(e.id, { ...T, team: 'Stara', place: 'Nowa hala' }, 'Ania', 'one');
+    expect(u.event).toMatchObject({ team: 'Stara', place: 'Nowa hala' });
+  });
 });
 
 describe('deleteEvent / restore', () => {
@@ -97,9 +109,28 @@ describe('deleteEvent / restore', () => {
     expect((await listWeek('2026-10-12')).map((x) => x.id)).toEqual([]);
     expect((await listWeek('2026-10-05')).map((x) => x.id)).toEqual([rows[1].id]);
     expect(await restoreEvents([rows[0].id], 'Ania')).toBe(1);
-    expect(await restoreSeries(r.seriesId, 'admin')).toBe(2);
+    const trashed = await getCalendar().listDeleted();
+    expect(await restoreSeries(r.seriesId, 'admin', trashed[0].deletedAt!)).toBe(2);
     expect(await evTypes()).toEqual(['cal_series_created', 'cal_deleted', 'cal_series_deleted', 'cal_restored', 'cal_restored']);
     await expect(getEvent('nie-ma')).rejects.toThrow(/Nie ma takiego/);
+  });
+  it('restoreSeries (I1) nie ożywia terminu tej samej serii usuniętego osobno, innego dnia', async () => {
+    const r = await createSeries({ ...T, date: '2026-09-29' }, { weekdays: [2], until: '2026-10-20' }, 'Ania');
+    const rows = await getCalendar().listSeriesFrom(r.seriesId, '2000-01-01T00:00:00.000Z'); // 4 terminy: 29.09, 06.10, 13.10, 20.10
+    let d: { ids: string[] };
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-09-30T10:00:00.000Z'));
+      await deleteEvent(rows[1].id, 'Ania', 'one'); // odwołany osobno, wcześniej
+      vi.setSystemTime(new Date('2026-10-01T10:00:00.000Z'));
+      d = await deleteEvent(rows[2].id, 'Krzysiek', 'following'); // usuwa rows[2] + rows[3], jeden wspólny deletedAt
+    } finally {
+      vi.useRealTimers();
+    }
+    const batchDeletedAt = (await getCalendar().listDeleted()).find((e) => e.id === d.ids[0])!.deletedAt!;
+    expect(await restoreSeries(r.seriesId, 'admin', batchDeletedAt)).toBe(2);
+    const stillTrashed = await getCalendar().listDeleted();
+    expect(stillTrashed.map((e) => e.id)).toEqual([rows[1].id]);
   });
 });
 

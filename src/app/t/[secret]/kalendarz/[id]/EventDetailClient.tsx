@@ -101,7 +101,10 @@ export function EventDetailClient({
     try {
       const r = await updateEventAction(secret, author, event.id, toRaw(value), scope);
       if ('error' in r) { setError(r.error); setMode('edit'); return; }
-      router.push(`/t/${secret}/kalendarz?d=${value.date}`);
+      // Zakres „następne" ignoruje datę z formularza dla KAŻDEGO wiersza serii (workflow przelicza ją z daty
+      // własnej wiersza) — nawigacja ma więc wracać na ORYGINALNĄ datę tego wydarzenia (`dateStr`), nie na
+      // `value.date`, które i tak nigdzie nie trafiło. Dla „ten jeden" `value.date` zostaje właściwym celem.
+      router.push(`/t/${secret}/kalendarz?d=${scope === 'following' ? dateStr : value.date}`);
     } catch {
       setError('Coś poszło nie tak. Spróbuj jeszcze raz.');
       setMode('edit');

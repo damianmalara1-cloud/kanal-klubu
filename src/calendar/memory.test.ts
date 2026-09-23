@@ -15,14 +15,15 @@ describe('MemoryCalendar', () => {
     expect(await repo.get(e.id)).toEqual(e);
     expect(await repo.get('nie-ma')).toBeNull();
   });
-  it('listRange: nakładające się, rosnąco, filtr drużyny (undefined=wszystkie, null=cały klub), bez kosza', async () => {
+  it('listRange: nakładające się, rosnąco, filtr drużyny (undefined=wszystkie, null=tylko klubowe, string=drużyna+klubowe), bez kosza', async () => {
     const a = await repo.create(row('2026-10-01T14:00:00.000Z', '2026-10-01T15:00:00.000Z'));
     const b = await repo.create(row('2026-09-30T22:00:00.000Z', '2026-10-01T00:30:00.000Z', { team: 'B' }));
     const c = await repo.create(row('2026-10-05T10:00:00.000Z', '2026-10-05T11:00:00.000Z', { team: null }));
     await repo.create(row('2026-09-01T10:00:00.000Z', '2026-09-01T11:00:00.000Z'));
     const all = await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z');
     expect(all.map((e) => e.id)).toEqual([b.id, a.id, c.id]);
-    expect((await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z', 'A')).map((e) => e.id)).toEqual([a.id]);
+    // Filtr drużyny 'A' (I6): musi dociągnąć też wydarzenie całego klubu (`c`, team=null) — nie tylko `a`.
+    expect((await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z', 'A')).map((e) => e.id)).toEqual([a.id, c.id]);
     expect((await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z', null)).map((e) => e.id)).toEqual([c.id]);
     await repo.softDelete([a.id], 'Krzysiek', '2026-10-02T00:00:00.000Z');
     expect((await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z')).map((e) => e.id)).toEqual([b.id, c.id]);

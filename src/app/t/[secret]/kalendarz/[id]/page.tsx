@@ -16,6 +16,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ se
     if (e instanceof AppError && e.status === 404) notFound();
     throw e;
   }
-  const { teams, coachNames, seasonEnd } = getConfig();
+  const { teams: configTeams, coachNames, seasonEnd } = getConfig();
+  // Drużyna wydarzenia mogła zniknąć z `TEAMS` po jego utworzeniu (I3) — dopisana na końcu, żeby `<select>`
+  // w `EventForm` miał ją wśród opcji (bez tego formularz pokazywałby pustą wartość zamiast bieżącej drużyny).
+  const teams = event.team !== null && !configTeams.includes(event.team) ? [...configTeams, event.team] : configTeams;
   return <EventDetailClient secret={secret} event={event} teams={teams} coachNames={coachNames} seasonEnd={seasonEnd} />;
 }

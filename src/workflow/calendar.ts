@@ -64,7 +64,10 @@ export function diffFields(before: CalEvent, after: CalPatchFields): Record<stri
 export async function updateEvent(id: string, raw: unknown, by: string, scope: Scope) {
   const repo = getCalendar();
   const before = await getEvent(id);
-  const input = parseCalInput(raw, ctx());
+  // Drużyna mogła zniknąć z `TEAMS` po utworzeniu wydarzenia (I3) — bez dopisania jej tutaj `parseCalInput`
+  // odrzuciłby KAŻDĄ edycję tego wydarzenia jako „drużyna spoza listy", nawet zmianę samego miejsca.
+  const c = ctx();
+  const input = parseCalInput(raw, before.team !== null ? { ...c, teams: [...c.teams, before.team] } : c);
   if (scope === 'following' && before.seriesId) {
     // `changes` liczone względem pól przeliczonych na WŁASNĄ datę edytowanego wiersza (nie `input.date`) —
     // przy zakresie „następne" data z formularza jest ignorowana dla każdego wiersza serii (patrz pętla niżej),
@@ -116,8 +119,11 @@ export async function restoreEvents(ids: string[], by: string): Promise<number> 
   return n;
 }
 
-export async function restoreSeries(seriesId: string, by: string): Promise<number> {
-  const ids = (await getCalendar().listDeleted()).filter((e) => e.seriesId === seriesId).map((e) => e.id);
+/** `deletedAt` odróżnia „ta seria, usunięta W TYM konkretnym momencie" od innych terminów tej samej serii,
+ * które trafiły do kosza osobno (np. jeden odwołany wcześniej `scope: 'one'`, potem reszta `following`) —
+ * bez tego „Przywróć serię" ożywiałoby też terminy, które ktoś świadomie odwołał przy innej okazji (I1). */
+export async function restoreSeries(seriesId: string, by: string, deletedAt: string): Promise<number> {
+  const ids = (await getCalendar().listDeleted()).filter((e) => e.seriesId === seriesId && e.deletedAt === deletedAt).map((e) => e.id);
   return restoreEvents(ids, by);
 }
 

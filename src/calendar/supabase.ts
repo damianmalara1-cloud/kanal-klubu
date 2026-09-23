@@ -24,6 +24,23 @@ export const toPatch = (p: CalPatch, by: string) => {
 };
 const validIds = (ids: string[]) => ids.filter((i) => UUID_RE.test(i));
 
+/** PostgREST nie zwraca więcej niż 1000 wierszy na zapytanie (`max-rows`) — bez paginacji `klub.ics` i kosz
+ * kalendarza po przekroczeniu tego progu milcząco tracą resztę wierszy. `q` to gotowy, przefiltrowany query
+ * builder — Supabase'owy `.range()` zwraca `this`, więc kolejne wywołania na tym samym obiekcie tylko
+ * przesuwają okno i można go bezpiecznie odpytać ponownie. */
+const PAGE = 1000;
+interface RangeableQuery<T> { range(from: number, to: number): PromiseLike<{ data: T[] | null; error: unknown }> }
+export async function pageAll<T>(q: RangeableQuery<T>): Promise<T[]> {
+  const out: T[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await q.range(offset, offset + PAGE - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    out.push(...page);
+    if (page.length < PAGE) return out;
+  }
+}
+
 export class SupabaseCalendar implements CalendarRepo {
   readonly kind = 'supabase' as const;
   private sb: SupabaseClient;
@@ -44,15 +61,26 @@ export class SupabaseCalendar implements CalendarRepo {
     const { data, error } = await this.q().select('*').eq('id', id).maybeSingle();
     if (error) throw error; return data ? fromRow(data) : null;
   }
+  /** `team` string: zwraca wydarzenia tej drużyny ORAZ całego klubu (`team IS NULL`) — reguła kontrolera (I6):
+   * trener drużyny musi widzieć zbiórki całego klubu w swoim filtrze/subskrypcji `.ics`. Dwa zapytania +
+   * scalenie zamiast `.or('team.eq.…,team.is.null')` — nazwy drużyn mają nawiasy (np. „młodzicy (2011+)"),
+   * a PostgREST wymaga wtedy ręcznego cytowania wartości w składni `.or()`, co jest kruche; osobne zapytania
+   * są prostsze do zweryfikowania i nie zależą od znaków w nazwie drużyny. `team === null` zostaje bez zmian
+   * („tylko klubowe"), `team === undefined` bez zmian (wszystko). */
   async listRange(fromIso: string, toIso: string, team?: string | null) {
-    let q = this.q().select('*').is('deleted_at', null).lt('starts_at', toIso).gt('ends_at', fromIso).order('starts_at', { ascending: true });
-    if (team === null) q = q.is('team', null); else if (team !== undefined) q = q.eq('team', team);
-    const { data, error } = await q; if (error) throw error; return (data ?? []).map(fromRow);
+    const base = () => this.q().select('*').is('deleted_at', null).lt('starts_at', toIso).gt('ends_at', fromIso).order('starts_at', { ascending: true });
+    if (team === undefined) return (await pageAll<Record<string, unknown>>(base())).map(fromRow);
+    if (team === null) return (await pageAll<Record<string, unknown>>(base().is('team', null))).map(fromRow);
+    const [teamRows, clubRows] = await Promise.all([
+      pageAll<Record<string, unknown>>(base().eq('team', team)),
+      pageAll<Record<string, unknown>>(base().is('team', null)),
+    ]);
+    return [...teamRows, ...clubRows].map(fromRow).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   }
   async listSeriesFrom(seriesId: string, fromIso: string) {
     if (!UUID_RE.test(seriesId)) return [];
-    const { data, error } = await this.q().select('*').is('deleted_at', null).eq('series_id', seriesId).gte('starts_at', fromIso).order('starts_at', { ascending: true });
-    if (error) throw error; return (data ?? []).map(fromRow);
+    const q = this.q().select('*').is('deleted_at', null).eq('series_id', seriesId).gte('starts_at', fromIso).order('starts_at', { ascending: true });
+    return (await pageAll<Record<string, unknown>>(q)).map(fromRow);
   }
   async update(id: string, patch: CalPatch, by: string) {
     if (!UUID_RE.test(id)) throw new Error(`calendar: brak ${id}`);
@@ -75,8 +103,8 @@ export class SupabaseCalendar implements CalendarRepo {
     if (error) throw error; return count ?? 0;
   }
   async listDeleted() {
-    const { data, error } = await this.q().select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).order('starts_at', { ascending: true });
-    if (error) throw error; return (data ?? []).map(fromRow);
+    const q = this.q().select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).order('starts_at', { ascending: true });
+    return (await pageAll<Record<string, unknown>>(q)).map(fromRow);
   }
   async purgeDeletedBefore(iso: string) {
     const { count, error } = await this.q().delete({ count: 'exact' }).lt('deleted_at', iso);

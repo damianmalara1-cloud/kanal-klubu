@@ -7,9 +7,10 @@ const S = 'abcdefghijklmnop';
 const T = { type: 'trening', team: 'A', date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] };
 beforeEach(() => resetAdapters());
 describe('kalendarz actions', () => {
-  it('zły sekret → Nieprawidłowy link; brak imienia → błąd', async () => {
+  it('zły sekret → Nieprawidłowy link; brak imienia → błąd; nieznany autor (I2) → błąd', async () => {
     expect(await createEventAction('zly', 'Ania', T)).toEqual({ error: 'Nieprawidłowy link' });
     expect(await createEventAction(S, '', T)).toEqual({ error: 'Wybierz swoje imię' });
+    expect(await createEventAction(S, 'Obcy', T)).toEqual({ error: 'Nieznany trener' });
   });
   it('walidacja wraca jako {error} po polsku', async () => {
     expect(await createEventAction(S, 'Ania', { ...T, endTime: '16:00' })).toEqual({ error: 'Koniec: musi być po początku' });

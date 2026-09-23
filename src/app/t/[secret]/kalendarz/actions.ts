@@ -1,4 +1,5 @@
 'use server';
+import { getConfig } from '@/config';
 import { isValidSecret } from '@/lib/access';
 import { actionFail } from '@/lib/errors';
 import { createEvent, createSeries, deleteEvent, restoreEvents, updateEvent, type Scope } from '@/workflow/calendar';
@@ -6,7 +7,18 @@ import { createEvent, createSeries, deleteEvent, restoreEvents, updateEvent, typ
 type Err = { error: string };
 const BAD = { error: 'Nieprawidłowy link' } as const;
 const NO_NAME = { error: 'Wybierz swoje imię' } as const;
-const guard = (secret: string, by: string): Err | null => (!isValidSecret(secret) ? BAD : !by.trim() ? NO_NAME : null);
+// Ten sam komunikat co `createDraft` w `workflow/draft.ts` — spójność między formularzem posta i kalendarzem.
+const UNKNOWN_NAME = { error: 'Nieznany trener' } as const;
+/** `by` przychodzi z klienta bez żadnej innej autoryzacji poza sekretem w linku (I2) — bez sprawdzenia listy
+ * `COACH_NAMES` ktokolwiek ze znajomością sekretu mógłby podpisać wydarzenie dowolnym imieniem/nickiem, co
+ * trafiłoby do dziennika (`created_by`/`author`) jako fałszywy autor. Admin-owe przywrócenie z kosza idzie
+ * przez `workflow/calendar.ts` bezpośrednio z `by: 'admin'`, nie przez ten guard — świadomie pominięte tutaj. */
+const guard = (secret: string, by: string): Err | null => {
+  if (!isValidSecret(secret)) return BAD;
+  if (!by.trim()) return NO_NAME;
+  if (!getConfig().coachNames.includes(by)) return UNKNOWN_NAME;
+  return null;
+};
 
 export async function createEventAction(secret: string, by: string, raw: unknown): Promise<{ id: string } | Err> {
   const g = guard(secret, by); if (g) return g;

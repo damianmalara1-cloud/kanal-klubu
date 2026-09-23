@@ -60,9 +60,16 @@ const CHANGE_LABEL: Record<string, string> = {
   startsAt: 'początek', endsAt: 'koniec', place: 'miejsce', team: 'drużyna',
   title: 'tytuł', coaches: 'trener', details: 'szczegóły', allDay: 'cały dzień',
 };
-const changeVal = (k: string, v: unknown): string => {
+/** `other` to wartość PO DRUGIEJ stronie strzałki (from↔to) — dla `startsAt`/`endsAt` decyduje, czy zmiana
+ * przeskoczyła na inny dzień lokalny: sama godzina myliłaby wtedy trenera („16:30 → 16:30" wygląda jak brak
+ * zmiany, choć termin przesunął się o dobę), więc wtedy pokazujemy pełne `fmtWhen` (dzień + godzina) po obu
+ * stronach zamiast samej godziny. */
+const changeVal = (k: string, v: unknown, other?: unknown): string => {
   if (v === null || v === undefined || v === '') return '—';
-  if (k === 'startsAt' || k === 'endsAt') return fmtTimeOnly(String(v));
+  if (k === 'startsAt' || k === 'endsAt') {
+    const sameDay = typeof other !== 'string' || isoToLocal(String(v)).date === isoToLocal(other).date;
+    return sameDay ? fmtTimeOnly(String(v)) : fmtWhen(String(v));
+  }
   if (Array.isArray(v)) return v.join(', ') || '—';
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
@@ -74,7 +81,7 @@ function calText(e: AppEvent): string {
   const what = `${CAL_TYPE_LABEL[m.type].toLowerCase()} ${m.team ?? 'cały klub'}${m.type === 'trening' ? '' : ` ${m.title}`}`;
   const count = m.count ?? '?';
   const changes = Object.entries(m.changes ?? {})
-    .map(([k, c]) => ` · ${CHANGE_LABEL[k] ?? k} ${changeVal(k, c.from)} → ${changeVal(k, c.to)}`)
+    .map(([k, c]) => ` · ${CHANGE_LABEL[k] ?? k} ${changeVal(k, c.from, c.to)} → ${changeVal(k, c.to, c.from)}`)
     .join('');
   switch (e.type) {
     case 'cal_created': return `Dodanie: ${what}, ${fmtWhen(m.startsAt)}`;

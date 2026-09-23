@@ -71,14 +71,14 @@ SEASON_END=2027-06-30
 
 ## Kalendarz klubowy
 
-Kalendarz treningów, meczów i turniejów klubu — trenerzy dodają i edytują terminy (pojedyncze albo serię) z tego samego linku co formularz posta; rodzice i dzieci subskrybują go w telefonie jako zwykły kalendarz, bez logowania i bez appki.
+Kalendarz treningów, meczów i turniejów klubu — trenerzy dodają i edytują terminy (pojedyncze albo serię) z tego samego linku co formularz posta. Link subskrypcji `.ics` zawiera ten sam sekret trenera co link do edycji — **nigdy nie przekazuj go rodzicom**; żeby rodzice mogli bezpiecznie subskrybować kalendarz w telefonie, potrzebny byłby osobny sekret tylko do odczytu (np. `ICS_SECRET`), którego appka dziś nie ma.
 
-- **Trasy trenera** (`/t/<COACH_LINK_SECRET>/kalendarz`): `/kalendarz` (tydzień), `/miesiac` (miesiąc), `/nowy` (nowe wydarzenie), `/<id>` (szczegóły/edycja/usunięcie), `/telefon` (linki do subskrypcji na iPhone/Androida).
-- **Subskrypcja .ics** (`/api/ics/<COACH_LINK_SECRET>/<slug>.ics`): `klub.ics` dla całego klubu albo `<slug-drużyny>.ics` dla jednej grupy — ten sam sekret co link trenera. Rotacja `COACH_LINK_SECRET` (np. po wycieku) unieważnia też te subskrypcje — trzeba rozesłać nowe linki.
-- **Kosz** (`/admin/kalendarz/kosz`): usunięte wydarzenia i serie trafiają do kosza na 30 dni (`CALENDAR_TRASH_DAYS`) z możliwością przywrócenia; cron `/api/cron/purge` kasuje je na trwałe dopiero po tym oknie.
+- **Trasy trenera** (`/t/<COACH_LINK_SECRET>/kalendarz`): `/kalendarz` (tydzień), `/miesiac` (miesiąc), `/nowy` (nowe wydarzenie), `/<id>` (szczegóły/edycja/usunięcie), `/telefon` (linki do subskrypcji na iPhone/Androida — z tym samym ostrzeżeniem o sekrecie).
+- **Subskrypcja .ics** (`/api/ics/<COACH_LINK_SECRET>/<slug>.ics`): `klub.ics` dla całego klubu albo `<slug-drużyny>.ics` dla jednej grupy — ten sam sekret co link trenera. `<slug-drużyny>.ics` (i filtr drużyny w widoku tydzień/miesiąc) pokazuje też wydarzenia całego klubu (`team = null`), nie tylko tej jednej grupy — trener musi widzieć zbiórki całego klubu obok swoich. Rotacja `COACH_LINK_SECRET` (np. po wycieku) unieważnia też te subskrypcje — trzeba rozesłać nowe linki.
+- **Kosz** (`/admin/kalendarz/kosz`): usunięte wydarzenia i serie trafiają do kosza na 30 dni (`CALENDAR_TRASH_DAYS`) z możliwością przywrócenia; cron `/api/cron/purge` kasuje je na trwałe dopiero po tym oknie. „Przywróć serię" wraca tylko terminy usunięte w tym samym momencie (ten sam `deletedAt`) — termin odwołany osobno wcześniej zostaje w koszu.
 - **Dziennik** (`/admin`, oś zdarzeń): dodanie/zmiana/usunięcie/przywrócenie terminu albo serii loguje się jako zdarzenia `cal_created`, `cal_series_created`, `cal_updated`, `cal_series_updated`, `cal_deleted`, `cal_series_deleted`, `cal_restored`.
-- **Migracje:** `supabase/migrations/0003_calendar.sql` (tabela kalendarza) i `0004_events_calendar_types.sql` (nowe typy `cal_*` w dzienniku) — wdrożyć (`db push`) przed deployem kodu kalendarza, inaczej appka pisze do nieistniejącej tabeli/typu.
-- **Drużyny i kolory:** kolor grupy w kalendarzu i w .ics zależy od pozycji drużyny na liście `TEAMS` — nowe drużyny zawsze dopisuj na końcu, inaczej przemalujesz kolory istniejących.
+- **Migracje:** `supabase/migrations/0003_calendar.sql` (tabela kalendarza) i `0004_events_calendar_types.sql` (nowe typy `cal_*` w dzienniku) — wdrożyć przez Supabase MCP (`apply_migration`) albo edytor SQL w dashboardzie Supabase przed deployem kodu kalendarza, inaczej appka pisze do nieistniejącej tabeli/typu.
+- **Drużyny i kolory:** kolor grupy w kalendarzu i w .ics zależy od pozycji drużyny na liście `TEAMS` — nowe drużyny zawsze dopisuj na końcu, inaczej przemalujesz kolory istniejących. Usunięcie drużyny z `TEAMS` nie blokuje edycji istniejących wydarzeń tej drużyny (wciąż widoczna jako opcja na formularzu tego konkretnego wydarzenia), ale znika z listy dla nowych.
 - **Dane dzieci:** pole „Uwagi" na formularzu wydarzenia ma wprost zaznaczone „bez nazwisk dzieci" — kalendarz nie jest miejscem na dane osobowe zawodniczek i zawodników.
 
 ## Produkcja

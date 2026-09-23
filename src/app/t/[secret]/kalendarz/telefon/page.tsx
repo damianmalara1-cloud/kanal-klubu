@@ -28,6 +28,7 @@ export default async function PhoneCalendarPage({ params }: { params: Promise<{ 
           </li>
         ))}
       </ul>
+      <p className="note">Ten link zawiera sekret trenera — nie przekazuj go rodzicom.</p>
       <p className="note">Telefon odświeża subskrypcję co kilka godzin (Google nawet do doby). Zmiana na dziś lub jutro idzie też na WhatsApp.</p>
     </main>
   );

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { CAL_FIELD_LABEL, NOTES_MAX, seriesDates } from '@/domain/calendar';
 import { AppError } from '@/lib/errors';
+import { plural } from '@/lib/plural';
 import { TeamSelect } from '@/components/forms/TeamSelect';
 import { dayLabel } from './week';
 import type { FormValue } from './form';
@@ -31,7 +32,7 @@ export function EventForm({
     try {
       const dates = seriesDates(value.date, value.until, value.weekdays);
       const shown = dates.slice(0, PREVIEW_SHOWN).map(dayLabel).join(', ');
-      preview = { text: `Utworzy ${dates.length} ${dates.length === 1 ? 'termin' : 'terminów'}: ${shown}${dates.length > PREVIEW_SHOWN ? '…' : ''}`, isError: false };
+      preview = { text: `Utworzy ${dates.length} ${plural(dates.length, 'termin', 'terminy', 'terminów')}: ${shown}${dates.length > PREVIEW_SHOWN ? '…' : ''}`, isError: false };
     } catch (e) {
       preview = { text: e instanceof AppError ? e.message : 'Nie da się policzyć terminów', isError: true };
     }
@@ -39,7 +40,7 @@ export function EventForm({
 
   return (
     <>
-      <TeamSelect id={id('team')} value={value.team} onChange={(v) => set('team', v)} teams={teams} allowAll={value.type === 'inne'} required={value.type !== 'inne'} />
+      <TeamSelect id={id('team')} value={value.team} onChange={(v) => set('team', v)} teams={teams} allowAll={value.type === 'inne'} allowOther={false} required={value.type !== 'inne'} />
 
       {value.type === 'mecz' && (
         <div className="field">
