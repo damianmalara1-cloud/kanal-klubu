@@ -93,5 +93,5 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .cal-weekdays .chip { justify-content: center; padding: 10px 2px; }
 .cal-preview { font-size: 14px; margin: -6px 0 14px; }
 .cal-undo { position: sticky; bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: var(--ink-900); color: #fff; }
-.cal-undo button { color: #fff; background: transparent; border: 2px solid #fff; min-height: 40px; padding: 0 14px; font: 700 13px/1 var(--font-text); text-transform: uppercase; }
+.cal-undo button { color: #fff; background: transparent; border: 2px solid #fff; min-height: 44px; padding: 0 14px; font: 700 13px/1 var(--font-text); text-transform: uppercase; }
 .cal-danger { border-color: var(--accent); color: var(--text-accent); }

@@ -33,6 +33,10 @@ export function EventDetailClient({
   const [busy, setBusy] = useState(false);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Druga linia obrony obok czyszczenia timera w `UndoBar` samym — gdyby `onDone` mimo wszystko poleciał
+  // po kliknięciu „Cofnij" (np. rodzic odmontowany w międzyczasie), ma być no-opem, nie przekierowaniem
+  // mimo udanego przywrócenia.
+  const undoing = useRef(false);
 
   const dateStr = isoToLocal(event.startsAt).date;
   const backHref = `/t/${secret}/kalendarz?d=${dateStr}`;
@@ -103,6 +107,7 @@ export function EventDetailClient({
   }
 
   async function onUndo() {
+    undoing.current = true;
     setError(null);
     try {
       const r = await restoreAction(secret, author, deletedIds);
@@ -115,6 +120,7 @@ export function EventDetailClient({
   }
 
   function onUndoTimeout() {
+    if (undoing.current) return;
     router.push(backHref);
   }
 
@@ -138,9 +144,9 @@ export function EventDetailClient({
 
       {mode === 'deleted' && <UndoBar count={deletedIds.length} onUndo={onUndo} onDone={onUndoTimeout} />}
 
-      {mode === 'askScope:save' && <ScopeChoice verb="zapisać" onPick={(s) => void doSave(s)} onCancel={() => setMode('edit')} />}
+      {mode === 'askScope:save' && <ScopeChoice verb="zapisać" busy={busy} onPick={(s) => void doSave(s)} onCancel={() => setMode('edit')} />}
 
-      {mode === 'askScope:delete' && <ScopeChoice verb="usunąć" onPick={(s) => void doDelete(s)} onCancel={() => setMode('view')} />}
+      {mode === 'askScope:delete' && <ScopeChoice verb="usunąć" busy={busy} onPick={(s) => void doDelete(s)} onCancel={() => setMode('view')} />}
 
       {mode === 'edit' && (
         <>
@@ -152,7 +158,7 @@ export function EventDetailClient({
               <button className="btn btn-primary" type="submit" disabled={busy || !author}>
                 Zapisz
               </button>
-              <button className="btn" type="button" onClick={() => setMode('view')}>
+              <button className="btn" type="button" onClick={() => { setValue(fromEvent(event, seasonEnd)); setMode('view'); }}>
                 Anuluj
               </button>
             </div>
@@ -187,7 +193,7 @@ export function EventDetailClient({
 
           {!author && <AuthorPick names={coachNames} value={author} onChange={setAuthor} />}
           <div className="stack">
-            <button className="btn" type="button" onClick={() => setMode('edit')}>
+            <button className="btn" type="button" onClick={() => setMode('edit')} disabled={busy}>
               Edytuj
             </button>
             <button className="btn cal-danger" type="button" onClick={onDeleteClick} disabled={busy || !author}>
