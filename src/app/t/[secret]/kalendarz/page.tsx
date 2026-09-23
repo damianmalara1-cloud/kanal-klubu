@@ -22,16 +22,20 @@ export default async function CalendarPage({ params, searchParams }: { params: P
   const ws = weekStart(d);
   const { teams } = getConfig();
   const events = await listWeek(ws, team);
-  const teamQ = raw ? `&team=${encodeURIComponent(raw)}` : '';
+  // Jawny `&team=` (nawet pusty, dla "Wszystkie") musi przeżyć do linku „Miesiąc" — inaczej przejście na
+  // widok miesiąca gubi wybrany filtr, tak samo jak przy nawigacji tygodniami (patrz `WeekView`/`teamHref`).
+  const teamQ = raw !== undefined ? `&team=${encodeURIComponent(raw)}` : '';
   return (
     <main className="wrap">
       <p className="kicker"><Link href={`/t/${secret}`}>← Kanał Klubu</Link></p>
       <h1>Kalendarz</h1>
-      <p className="muted" style={{ marginTop: -8 }}>
-        <Link href={`/t/${secret}/kalendarz/miesiac?m=${ws.slice(0, 7)}${teamQ}`}>Miesiąc</Link> · <Link href={`/t/${secret}/kalendarz/telefon`}>Do telefonu</Link> · <Link className="cal-add-main" href={`/t/${secret}/kalendarz/nowy?date=${d}`}>+ Dodaj</Link>
-      </p>
+      <nav className="cal-links" aria-label="Kalendarz — widoki">
+        <Link href={`/t/${secret}/kalendarz/miesiac?m=${ws.slice(0, 7)}${teamQ}`}>Miesiąc</Link>
+        <Link href={`/t/${secret}/kalendarz/telefon`}>Do telefonu</Link>
+        <Link href={`/t/${secret}/kalendarz/nowy?date=${d}`}>+ Dodaj</Link>
+      </nav>
       <TeamFilter secret={secret} date={d} teams={teams} team={team} hasParam={raw !== undefined} />
-      <WeekView secret={secret} weekStartDate={ws} events={events} teams={teams} teamQ={teamQ} />
+      <WeekView secret={secret} weekStartDate={ws} events={events} teams={teams} rawTeam={raw} />
     </main>
   );
 }

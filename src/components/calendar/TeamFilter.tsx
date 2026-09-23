@@ -3,10 +3,13 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { teamColor } from '@/domain/calendarColors';
+import { teamHref } from './week';
 const KEY = 'kk-cal-team';
 export function TeamFilter({ secret, date, teams, team, hasParam }: { secret: string; date: string; teams: string[]; team: string | null | undefined; hasParam: boolean }) {
   const router = useRouter();
-  const href = (t: string) => `/t/${secret}/kalendarz?d=${date}${t ? `&team=${encodeURIComponent(t)}` : ''}`;
+  // Jawny `team=` w URL nawet dla `''` ("Wszystkie") — inaczej brak parametru wygląda jak „jeszcze nie wybrano"
+  // i efekt niżej odbija z powrotem do zapisanego w localStorage filtra (patrz komentarz przy `teamHref`).
+  const href = (t: string) => teamHref(secret, date, t);
   useEffect(() => {
     try {
       if (hasParam) localStorage.setItem(KEY, team === null ? 'klub' : (team ?? ''));

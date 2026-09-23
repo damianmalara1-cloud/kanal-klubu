@@ -2,12 +2,15 @@ import Link from 'next/link';
 import type { CalEvent } from '@/domain/calendar';
 import { addDays, nowIso, todayPl } from '@/lib/dates';
 import { EventCard } from './EventCard';
-import { dayLabel, groupByDay } from './week';
+import { dayLabel, groupByDay, teamHref } from './week';
 
-export function WeekView({ secret, weekStartDate, events, teams, teamQ }: { secret: string; weekStartDate: string; events: CalEvent[]; teams: string[]; teamQ: string }) {
+export function WeekView({ secret, weekStartDate, events, teams, rawTeam }: { secret: string; weekStartDate: string; events: CalEvent[]; teams: string[]; rawTeam: string | undefined }) {
   const days = groupByDay(weekStartDate, events);
   const now = nowIso(), today = todayPl();
-  const nav = (d: string) => `/t/${secret}/kalendarz?d=${d}${teamQ}`;
+  // `rawTeam` niezdefiniowany = filtr jeszcze nie wybrany (link bez `team=`, TeamFilter dociąga zapis z
+  // localStorage); jawny string (nawet '' — "Wszystkie") musi lecieć dalej przez `teamHref`, inaczej
+  // przełączanie tygodni gubi wybór i odbija do ostatnio zapisanego filtra.
+  const nav = (d: string) => (rawTeam !== undefined ? teamHref(secret, d, rawTeam) : `/t/${secret}/kalendarz?d=${d}`);
   return (
     <>
       <nav className="adm-nav" aria-label="Tydzień">
