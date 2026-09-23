@@ -49,6 +49,7 @@ describe('eventText — kalendarz', () => {
     expect(eventText(cal('cal_series_created', { ...base, count: 38 }))).toBe('Dodanie serii 38 treningów: młodzicy (2011+), od wt 29.09 16:30');
     expect(eventText(cal('cal_deleted', base))).toBe('Usunięcie: trening młodzicy (2011+), wt 29.09 16:30');
     expect(eventText(cal('cal_series_deleted', { ...base, count: 12 }))).toBe('Usunięcie 12 terminów serii: trening młodzicy (2011+), od wt 29.09 16:30');
+    expect(eventText(cal('cal_series_deleted', base))).toBe('Usunięcie ? terminów serii: trening młodzicy (2011+), od wt 29.09 16:30');
     expect(eventText(cal('cal_restored', { ...base, type: 'mecz', title: 'vs Wybrzeże' }, null))).toBe('Przywrócenie: mecz młodzicy (2011+) vs Wybrzeże, wt 29.09 16:30');
   });
   it('zmiana pokazuje tylko zmienione pola, godziny po polsku', () => {
