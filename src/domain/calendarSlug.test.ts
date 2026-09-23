@@ -5,6 +5,8 @@ describe('slug', () => {
   it('polskie znaki i nawiasy → ascii-kebab', () => {
     expect(teamSlug('młodziczki (2011+)')).toBe('mlodziczki-2011');
     expect(teamSlug('Juniorki młodsze')).toBe('juniorki-mlodsze');
+    expect(teamSlug('dziewczęta 2013+')).toBe('dziewczeta-2013');
+    expect(teamSlug('Łódź Ślązak')).toBe('lodz-slazak');
   });
   it('mapa slug→drużyna; kolizja rzuca', () => {
     expect(slugMap(['młodziczki (2011+)', 'juniorki']).get('juniorki')).toBe('juniorki');
