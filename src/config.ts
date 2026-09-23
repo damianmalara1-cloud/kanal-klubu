@@ -20,6 +20,7 @@ const schema = z.object({
   CRON_SECRET: z.string().default(''),
   MOCK_EXTERNAL: bool,
   ADMIN_PASSWORD: z.string().default(''),
+  SEASON_END: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default('2027-06-30'),
 }).refine((e) => !(e.NODE_ENV === 'production' && (e.AI_MOCK || e.MOCK_EXTERNAL)), {
   // Mock w produkcji nie wywala się głośno — appka udaje, że działa: posty lądują w pamięci funkcji
   // (giną przy cold starcie), a generator zwraca tekst testowy zamiast modelu. Padamy przy starcie.
@@ -42,6 +43,7 @@ export interface Config {
   cronSecret: string;
   mockExternal: boolean;
   adminPassword: string;
+  seasonEnd: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -61,6 +63,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     cronSecret: e.CRON_SECRET,
     mockExternal: e.MOCK_EXTERNAL,
     adminPassword: e.ADMIN_PASSWORD,
+    seasonEnd: e.SEASON_END,
   };
 }
 

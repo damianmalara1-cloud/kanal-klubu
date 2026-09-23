@@ -31,6 +31,7 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     cronSecret: '',
     mockExternal: true,
     adminPassword: '',
+    seasonEnd: '2027-06-30',
     ...overrides,
   };
 }
