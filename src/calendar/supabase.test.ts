@@ -9,5 +9,6 @@ describe('SupabaseCalendar mapowanie', () => {
     expect(toInsert({ type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: {}, seriesId: 'sid', by: 'Ania' })).toMatchObject({ series_id: 'sid', created_by: 'Ania', updated_by: 'Ania', starts_at: 's' });
     const p = toPatch({ place: 'Hala', startsAt: undefined }, 'K');
     expect(p).toMatchObject({ place: 'Hala', updated_by: 'K' }); expect('starts_at' in p).toBe(false); expect(typeof p.updated_at).toBe('string');
+    expect(toPatch({ place: null }, 'K')).toMatchObject({ place: null });
   });
 });

@@ -5,6 +5,8 @@ import type { CalendarRepo, CalPatch, NewCalEvent } from './types';
 
 const clone = (e: CalEvent): CalEvent => structuredClone(e);
 const byStart = (a: CalEvent, b: CalEvent) => a.startsAt.localeCompare(b.startsAt);
+/** Odsiewa jawne `undefined` z patcha — jak `toPatch` w adapterze Supabase, `undefined` = „nie zmieniaj tego pola". */
+const defined = (p: CalPatch): CalPatch => Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined)) as CalPatch;
 
 export class MemoryCalendar implements CalendarRepo {
   readonly kind = 'memory' as const;
@@ -28,12 +30,12 @@ export class MemoryCalendar implements CalendarRepo {
   async update(id: string, patch: CalPatch, by: string) {
     const r = this.rows.find((x) => x.id === id);
     if (!r) throw new Error(`calendar: brak ${id}`);
-    Object.assign(r, structuredClone(patch), { updatedBy: by, updatedAt: nowIso() });
+    Object.assign(r, structuredClone(defined(patch)), { updatedBy: by, updatedAt: nowIso() });
     return clone(r);
   }
   async updateMany(ids: string[], patch: CalPatch, by: string) {
-    let n = 0; const now = nowIso();
-    for (const r of this.rows) if (ids.includes(r.id)) { Object.assign(r, structuredClone(patch), { updatedBy: by, updatedAt: now }); n++; }
+    let n = 0; const now = nowIso(); const p = defined(patch);
+    for (const r of this.rows) if (ids.includes(r.id)) { Object.assign(r, structuredClone(p), { updatedBy: by, updatedAt: now }); n++; }
     return n;
   }
   async softDelete(ids: string[], by: string, atIso: string) {

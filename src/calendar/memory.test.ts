@@ -38,6 +38,11 @@ describe('MemoryCalendar', () => {
     expect((await repo.get(made[0].id))?.place).toBeNull();
     expect((await repo.get(made[1].id))).toMatchObject({ place: 'Hala B', updatedBy: 'Krzysiek' });
   });
+  it('update: jawny undefined w patchu nie nadpisuje pola', async () => {
+    const a = await repo.create(row('2026-10-01T14:00:00.000Z', '2026-10-01T15:00:00.000Z', { place: 'Hala A' }));
+    const updated = await repo.update(a.id, { place: undefined, title: 'X' }, 'K');
+    expect(updated).toMatchObject({ place: 'Hala A', title: 'X', updatedBy: 'K' });
+  });
   it('softDelete idempotentne, restore, listDeleted, purgeDeletedBefore', async () => {
     const a = await repo.create(row('2026-10-01T14:00:00.000Z', '2026-10-01T15:00:00.000Z'));
     const b = await repo.create(row('2026-10-02T14:00:00.000Z', '2026-10-02T15:00:00.000Z'));

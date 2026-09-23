@@ -55,6 +55,7 @@ export class SupabaseCalendar implements CalendarRepo {
     if (error) throw error; return (data ?? []).map(fromRow);
   }
   async update(id: string, patch: CalPatch, by: string) {
+    if (!UUID_RE.test(id)) throw new Error(`calendar: brak ${id}`);
     const { data, error } = await this.q().update(toPatch(patch, by)).eq('id', id).select('*').single();
     if (error) throw error; return fromRow(data);
   }
