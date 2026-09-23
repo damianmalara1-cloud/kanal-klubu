@@ -53,6 +53,9 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
     <main className="wrap">
       <p className="kicker">UKS Banino · Kanał Klubu</p>
       <h1>Nowy post</h1>
+      <div className="tiles" style={{ marginBottom: 16 }}>
+        <Link className="tile cal-tile" href={`/t/${secret}/kalendarz`}>Kalendarz</Link>
+      </div>
       <h2>Kto pisze?</h2>
       <div className="chips" role="group" aria-label="Kto pisze">
         {names.map((n) => (
