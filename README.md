@@ -36,6 +36,7 @@ npm run dev
 | `CRON_SECRET` | tak (chyba że `MOCK_EXTERNAL=true`) | `openssl rand -hex 16` | Sprawdzany w `Authorization: Bearer <CRON_SECRET>` przy wywołaniu crona przez Vercel. |
 | `MOCK_EXTERNAL` | nie | `false` | `true` = adapter pamięciowy zamiast Supabase (dev/test/e2e), auth crona pomijana. |
 | `ADMIN_PASSWORD` | nie (bez niego panel `/admin` jest wyłączony) | `openssl rand -base64 18` (min. 12 znaków) | Hasło do panelu admina `/admin` (użycie i koszty AI). Ciasteczko sesji to HMAC kluczowany tym hasłem — musi być wartością losową, wygenerowaną, nie zapamiętywalnym hasłem. Ustawiasz sam w Vercelu jako Sensitive; zmiana hasła wylogowuje wszystkie sesje. |
+| `SEASON_END` | nie | `2027-06-30` | Koniec sezonu — domyślna data „do" przy serii treningów i górna granica pliku .ics (+90 dni). |
 
 ### Zmienne środowiskowe — treść `.env.example`
 
@@ -56,6 +57,7 @@ PARTNER_INFO_ENABLED=false
 CRON_SECRET=
 MOCK_EXTERNAL=false
 ADMIN_PASSWORD=
+SEASON_END=2027-06-30
 ```
 
 ## Panel admina
@@ -66,6 +68,18 @@ ADMIN_PASSWORD=
 - **Historia posta** (`/admin/post/<id>`): zdarzenia z kosztem, porównanie ostatniej wersji AI z tekstem opublikowanym, wersje z regeneracji i notatki trenera.
 - **Źródło danych:** tabela `events` (`supabase/migrations/0002_events.sql`). Koszt = `usage.cost` z odpowiedzi OpenRoutera; wywołania bez tej informacji (timeout, brak pola) liczone osobno jako „bez danych o koszcie".
 - **Retencja** (cron `/api/cron/purge`): treść zdarzeń (teksty, notatki) znika razem z postem — szkic po 24 h, gotowy po 7 dniach, najpóźniej po 8 dniach; nieudane logowania (z IP) po 1 dniu; wszystkie zdarzenia po 365 dniach.
+
+## Kalendarz klubowy
+
+Kalendarz treningów, meczów i turniejów klubu — trenerzy dodają i edytują terminy (pojedyncze albo serię) z tego samego linku co formularz posta; rodzice i dzieci subskrybują go w telefonie jako zwykły kalendarz, bez logowania i bez appki.
+
+- **Trasy trenera** (`/t/<COACH_LINK_SECRET>/kalendarz`): `/kalendarz` (tydzień), `/miesiac` (miesiąc), `/nowy` (nowe wydarzenie), `/<id>` (szczegóły/edycja/usunięcie), `/telefon` (linki do subskrypcji na iPhone/Androida).
+- **Subskrypcja .ics** (`/api/ics/<COACH_LINK_SECRET>/<slug>.ics`): `klub.ics` dla całego klubu albo `<slug-drużyny>.ics` dla jednej grupy — ten sam sekret co link trenera. Rotacja `COACH_LINK_SECRET` (np. po wycieku) unieważnia też te subskrypcje — trzeba rozesłać nowe linki.
+- **Kosz** (`/admin/kalendarz/kosz`): usunięte wydarzenia i serie trafiają do kosza na 30 dni (`CALENDAR_TRASH_DAYS`) z możliwością przywrócenia; cron `/api/cron/purge` kasuje je na trwałe dopiero po tym oknie.
+- **Dziennik** (`/admin`, oś zdarzeń): dodanie/zmiana/usunięcie/przywrócenie terminu albo serii loguje się jako zdarzenia `cal_created`, `cal_series_created`, `cal_updated`, `cal_series_updated`, `cal_deleted`, `cal_series_deleted`, `cal_restored`.
+- **Migracje:** `supabase/migrations/0003_calendar.sql` (tabela kalendarza) i `0004_events_calendar_types.sql` (nowe typy `cal_*` w dzienniku) — wdrożyć (`db push`) przed deployem kodu kalendarza, inaczej appka pisze do nieistniejącej tabeli/typu.
+- **Drużyny i kolory:** kolor grupy w kalendarzu i w .ics zależy od pozycji drużyny na liście `TEAMS` — nowe drużyny zawsze dopisuj na końcu, inaczej przemalujesz kolory istniejących.
+- **Dane dzieci:** pole „Uwagi" na formularzu wydarzenia ma wprost zaznaczone „bez nazwisk dzieci" — kalendarz nie jest miejscem na dane osobowe zawodniczek i zawodników.
 
 ## Produkcja
 

@@ -39,7 +39,10 @@ export async function Dashboard({ sp }: { sp: SP }) {
       <p className="kicker">UKS Banino · Kanał Klubu</p>
       <div className="adm-nav">
         <h1>Panel admina</h1>
-        <form action={adminLogoutAction}><button type="submit" className="chip">Wyloguj</button></form>
+        <div className="chips">
+          <Link className="chip" href="/admin/kalendarz/kosz">Kosz kalendarza</Link>
+          <form action={adminLogoutAction}><button type="submit" className="chip">Wyloguj</button></form>
+        </div>
       </div>
 
       <nav className="adm-nav" aria-label="Miesiąc">

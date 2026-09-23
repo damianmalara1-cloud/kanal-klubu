@@ -80,7 +80,7 @@ function calText(e: AppEvent): string {
     case 'cal_created': return `Dodanie: ${what}, ${fmtWhen(m.startsAt)}`;
     case 'cal_series_created': return `Dodanie serii ${count} treningów: ${m.team ?? 'cały klub'}, od ${fmtWhen(m.startsAt)}`;
     case 'cal_updated': return `Zmiana: ${what}, ${fmtDay(m.startsAt)}${changes}`;
-    case 'cal_series_updated': return `Zmiana ${count} terminów serii: ${what}, od ${fmtDay(m.startsAt)}${changes}`;
+    case 'cal_series_updated': return `Zmiana ${count} terminów serii: ${what}, od ${fmtDay(m.startsAt)}${changes}${m.partial ? ' · przerwane' : ''}`;
     case 'cal_deleted': return `Usunięcie: ${what}, ${fmtWhen(m.startsAt)}`;
     case 'cal_series_deleted': return `Usunięcie ${count} terminów serii: ${what}, od ${fmtWhen(m.startsAt)}`;
     case 'cal_restored': return `Przywrócenie: ${what}, ${fmtWhen(m.startsAt)}`;

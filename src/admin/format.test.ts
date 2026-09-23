@@ -57,4 +57,8 @@ describe('eventText — kalendarz', () => {
     expect(eventText(cal('cal_updated', m))).toBe('Zmiana: trening młodzicy (2011+), wt 29.09 · początek 16:30 → 17:00 · miejsce — → Hala B');
     expect(eventText(cal('cal_series_updated', { ...m, count: 20 }))).toBe('Zmiana 20 terminów serii: trening młodzicy (2011+), od wt 29.09 · początek 16:30 → 17:00 · miejsce — → Hala B');
   });
+  it('seria przerwana w połowie dostaje dopisek „· przerwane"', () => {
+    const m = { ...base, count: 3, changes: { place: { from: null, to: 'Hala B' } }, partial: true };
+    expect(eventText(cal('cal_series_updated', m))).toBe('Zmiana 3 terminów serii: trening młodzicy (2011+), od wt 29.09 · miejsce — → Hala B · przerwane');
+  });
 });

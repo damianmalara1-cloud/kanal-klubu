@@ -7,6 +7,7 @@ import { purge } from './purge';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { getEvents } from '@/events';
+import { getCalendar } from '@/calendar';
 import { log } from '@/lib/log';
 beforeEach(() => resetAdapters());
 afterEach(() => vi.restoreAllMocks());
@@ -21,7 +22,7 @@ describe('purge', () => {
     await getRepo().update(p.id, { status: 'done', purgeAfter: '2000-01-01T00:00:00.000Z' });
     const fresh = await mk();
     const r = await purge('2001-01-01T00:00:00.000Z');
-    expect(r).toEqual({ purged: 1, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0 });
+    expect(r).toEqual({ purged: 1, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0, calendarPurged: 0 });
     expect(await getRepo().get(d.id)).toBeNull();
     const kept = await getRepo().get(p.id); expect(kept?.purgedAt).not.toBeNull(); expect(kept?.photos).toEqual([]); expect(kept?.creativePath).toBeNull();
     // IP było potrzebne tylko do rate limitu 20 postów/h — po retencji zostaje log posta, nie dana osobowa
@@ -41,7 +42,7 @@ describe('purge', () => {
 
     const r = await purge('2001-01-01T00:00:00.000Z');
 
-    expect(r).toEqual({ purged: 1, deletedDrafts: 0, failed: 1, eventsContentCleared: 0, eventsDeleted: 0 });
+    expect(r).toEqual({ purged: 1, deletedDrafts: 0, failed: 1, eventsContentCleared: 0, eventsDeleted: 0, calendarPurged: 0 });
     expect(errSpy).toHaveBeenCalledOnce();
     expect(errSpy).toHaveBeenCalledWith('purge', expect.objectContaining({ id: d.id }));
     // post, na którym padło, zostaje nietknięty — spróbujemy znów następnego dnia
@@ -87,5 +88,18 @@ describe('purge — retencja dziennika', () => {
     const r = await purge('2001-01-01T00:00:00.000Z');
     expect(r).toMatchObject({ deletedDrafts: 1, failed: 1 });
     expect(errSpy).toHaveBeenCalledWith('purge-events', expect.objectContaining({ err: 'boom' }));
+  });
+});
+
+describe('purge — kosz kalendarza', () => {
+  it('kosz kalendarza: kasuje starsze niż 30 dni, młodsze zostają', async () => {
+    const mk = (d: string) => getCalendar().create({ type: 'inne', team: null, title: 't', startsAt: `${d}T10:00:00.000Z`, endsAt: `${d}T11:00:00.000Z`, allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
+    const old = await mk('2026-08-01'), fresh = await mk('2026-08-02');
+    await getCalendar().softDelete([old.id], 'Ania', '2026-08-10T00:00:00.000Z');
+    await getCalendar().softDelete([fresh.id], 'Ania', '2026-09-20T00:00:00.000Z');
+    const r = await purge('2026-09-23T00:00:00.000Z');
+    expect(r.calendarPurged).toBe(1);
+    expect(await getCalendar().get(old.id)).toBeNull();
+    expect((await getCalendar().get(fresh.id))?.deletedAt).not.toBeNull();
   });
 });

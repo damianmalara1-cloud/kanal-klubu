@@ -100,8 +100,8 @@ describe('cron', () => {
     await getRepo().update(d.id, { purgeAfter: '2000-01-01T00:00:00.000Z' });
     const r = await cronGet(new Request('http://x/api/cron/purge', { headers: { authorization: 'Bearer tajny-sekret-crona' } }));
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ purged: 0, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0 });
-    expect(infoSpy).toHaveBeenCalledWith('purge', { purged: 0, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0 });
+    expect(await r.json()).toEqual({ purged: 0, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0, calendarPurged: 0 });
+    expect(infoSpy).toHaveBeenCalledWith('purge', { purged: 0, deletedDrafts: 1, failed: 0, eventsContentCleared: 0, eventsDeleted: 0, calendarPurged: 0 });
   });
   it('poza mockiem zły Bearer → 401', async () => {
     vi.spyOn(log, 'error').mockImplementation(() => {});

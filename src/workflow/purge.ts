@@ -1,6 +1,7 @@
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { getEvents } from '@/events';
+import { getCalendar } from '@/calendar';
 import { nowIso, plusDays } from '@/lib/dates';
 import { errMessage } from '@/lib/errors';
 import { log } from '@/lib/log';
@@ -9,16 +10,20 @@ import { log } from '@/lib/log';
 export const EVENT_CONTENT_MAX_DAYS = 8; // siatka bezpieczeństwa: treść nie żyje dłużej niż gotowy post (7 dni) + doba
 export const LOGIN_FAILED_KEEP_DAYS = 1; // `admin_login_failed` trzyma IP — potrzebne tylko do limitu prób (15 min)
 export const EVENTS_KEEP_DAYS = 365;
+/** Kosz kalendarza (Task 11) — wydarzenia usunięte miękko czekają tyle w `/admin/kalendarz/kosz`, zanim cron je skasuje na trwałe. */
+export const CALENDAR_TRASH_DAYS = 30;
 
-export type PurgeResult = { purged: number; deletedDrafts: number; failed: number; eventsContentCleared: number; eventsDeleted: number };
+export type PurgeResult = { purged: number; deletedDrafts: number; failed: number; eventsContentCleared: number; eventsDeleted: number; calendarPurged: number };
 
 /** Cron raz dziennie: szkice po 24 h znikają w całości, gotowe posty po 7 dniach tracą pliki (rekord zostaje jako log).
  * Błąd na pojedynczym poście (storage albo repo) jest izolowany try/catch per item — nie może zablokować
  * reszty przeterminowanej kolejki. Nieudany post zostaje nietknięty (spróbujemy znów następnego dnia).
- * Treść zdarzeń posta znika razem z nim; sprzątanie dziennika ma własne try/catch i nie cofa sprzątania postów. */
+ * Treść zdarzeń posta znika razem z nim; sprzątanie dziennika ma własne try/catch i nie cofa sprzątania postów.
+ * Kosz kalendarza (wydarzenia miękko usunięte, `/admin/kalendarz/kosz`) ma trzecie, niezależne try/catch —
+ * błąd tam nie blokuje ani postów, ani dziennika. */
 export async function purge(now: string = nowIso()): Promise<PurgeResult> {
   const repo = getRepo(), storage = getStorage(), events = getEvents();
-  let purged = 0, deletedDrafts = 0, failed = 0, eventsContentCleared = 0, eventsDeleted = 0;
+  let purged = 0, deletedDrafts = 0, failed = 0, eventsContentCleared = 0, eventsDeleted = 0, calendarPurged = 0;
   for (const p of await repo.listForPurge(now)) {
     try {
       await storage.remove([...p.photos, p.creativePath].filter((x): x is string => !!x));
@@ -46,5 +51,11 @@ export async function purge(now: string = nowIso()): Promise<PurgeResult> {
     log.error('purge-events', { err: errMessage(e) });
     failed++;
   }
-  return { purged, deletedDrafts, failed, eventsContentCleared, eventsDeleted };
+  try {
+    calendarPurged = await getCalendar().purgeDeletedBefore(plusDays(now, -CALENDAR_TRASH_DAYS));
+  } catch (e) {
+    log.error('purge-calendar', { err: errMessage(e) });
+    failed++;
+  }
+  return { purged, deletedDrafts, failed, eventsContentCleared, eventsDeleted, calendarPurged };
 }
