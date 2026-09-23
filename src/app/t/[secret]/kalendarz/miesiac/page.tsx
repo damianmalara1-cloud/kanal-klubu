@@ -9,6 +9,7 @@ import { fmtMonth } from '@/admin/format';
 import { listMonth } from '@/workflow/calendar';
 import { teamColor } from '@/domain/calendarColors';
 import { dotsByDay, monthGrid } from '@/components/calendar/month';
+import { dayLabel } from '@/components/calendar/week';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Miesiąc — Kanał Klubu', robots: { index: false, follow: false } };
@@ -40,14 +41,14 @@ export default async function MonthPage({ params, searchParams }: { params: Prom
         <Link href={`/t/${secret}/kalendarz?d=${m}-01${teamQ}`}>Tydzień</Link>
         <Link href={`/t/${secret}/kalendarz/miesiac?m=${shiftMonth(m, 1)}${teamQ}`}>następny →</Link>
       </nav>
-      <div className="cal-grid" role="grid" aria-label={fmtMonth(m)}>
-        {WD.map((w) => <div key={w} className="cal-wd" aria-hidden="true">{w}</div>)}
+      <section className="cal-grid" aria-label={`Miesiąc ${fmtMonth(m)}`}>
+        {WD.map((w) => <div key={w} className="cal-wd">{w}</div>)}
         {grid.map(({ date, inMonth }) => {
           const dayTeams = dots.get(date) ?? [];
           const shown = dayTeams.slice(0, DOTS_MAX);
           const extra = dayTeams.length - shown.length;
           return (
-            <Link key={date} href={`/t/${secret}/kalendarz?d=${date}${teamQ}`} className={`cal-cell${inMonth ? '' : ' cal-out'}`}>
+            <Link key={date} href={`/t/${secret}/kalendarz?d=${date}${teamQ}`} aria-label={dayLabel(date)} className={`cal-cell${inMonth ? '' : ' cal-out'}`}>
               {Number(date.slice(8, 10))}
               {shown.length > 0 && (
                 <span className="cal-cell-dots" aria-hidden="true">
@@ -58,7 +59,7 @@ export default async function MonthPage({ params, searchParams }: { params: Prom
             </Link>
           );
         })}
-      </div>
+      </section>
     </main>
   );
 }
