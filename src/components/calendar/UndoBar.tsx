@@ -6,7 +6,9 @@ import { useEffect, useRef } from 'react';
  * poleci `onUndo` — inaczej przy kliknięciu blisko granicy 10 s timer potrafił odpalić się w trakcie
  * `await restoreAction(...)` w rodzicu i wywołać `onDone` (przekierowanie) mimo udanego przywrócenia
  * (znalezione w review Task 8). Czyszczenie przy odmontowaniu zostaje jako druga linia obrony. */
-export function UndoBar({ count, onUndo, onDone, seconds = 10 }: { count: number; onUndo: () => void; onDone: () => void; seconds?: number }) {
+export function UndoBar({
+  count, onUndo, onDone, seconds = 10, busy,
+}: { count: number; onUndo: () => void; onDone: () => void; seconds?: number; busy?: boolean }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function UndoBar({ count, onUndo, onDone, seconds = 10 }: { count: number
   return (
     <div className="cal-undo" role="status">
       <span>Usunięto {count}</span>
-      <button type="button" onClick={handleUndo}>
+      <button type="button" onClick={handleUndo} disabled={busy}>
         Cofnij
       </button>
     </div>

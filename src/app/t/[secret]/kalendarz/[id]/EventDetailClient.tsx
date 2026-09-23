@@ -32,6 +32,10 @@ export function EventDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  // Bump po nieudanym `onUndo` → `key` na `UndoBar` się zmienia → React odmontowuje stary pasek i montuje
+  // nowy, co ponownie uzbraja jego timer 10 s (inaczej pasek zostawałby bez auto-zniknięcia na zawsze —
+  // znalezione w drugiej rundzie review Task 8: timer raz wyczyszczony klikiem „Cofnij" się nie odtwarza sam).
+  const [undoKey, setUndoKey] = useState(0);
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Druga linia obrony obok czyszczenia timera w `UndoBar` samym — gdyby `onDone` mimo wszystko poleciał
   // po kliknięciu „Cofnij" (np. rodzic odmontowany w międzyczasie), ma być no-opem, nie przekierowaniem
@@ -109,13 +113,23 @@ export function EventDetailClient({
   async function onUndo() {
     undoing.current = true;
     setError(null);
+    setBusy(true);
     try {
       const r = await restoreAction(secret, author, deletedIds);
-      if ('error' in r) { setError(r.error); return; }
+      if ('error' in r) {
+        setError(r.error);
+        undoing.current = false;
+        setUndoKey((k) => k + 1);
+        return;
+      }
       setMode('view');
       router.refresh();
     } catch {
       setError('Coś poszło nie tak. Spróbuj jeszcze raz.');
+      undoing.current = false;
+      setUndoKey((k) => k + 1);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -142,7 +156,7 @@ export function EventDetailClient({
         </p>
       )}
 
-      {mode === 'deleted' && <UndoBar count={deletedIds.length} onUndo={onUndo} onDone={onUndoTimeout} />}
+      {mode === 'deleted' && <UndoBar key={undoKey} count={deletedIds.length} onUndo={onUndo} onDone={onUndoTimeout} busy={busy} />}
 
       {mode === 'askScope:save' && <ScopeChoice verb="zapisać" busy={busy} onPick={(s) => void doSave(s)} onCancel={() => setMode('edit')} />}
 
