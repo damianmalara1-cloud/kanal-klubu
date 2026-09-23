@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCalInput, parseSeriesInput, seriesDates, inputToFields, SERIES_MAX } from './calendar';
+import { parseCalInput, parseSeriesInput, seriesDates, inputToFields, SERIES_MAX, calSummary } from './calendar';
 
 const ctx = { teams: ['młodziczki (2011+)', 'młodzicy (2011+)'], coachNames: ['Ania', 'Krzysiek'] };
 const trening = { type: 'trening', team: 'młodziczki (2011+)', date: '2026-09-29', startTime: '16:30', endTime: '18:00', place: 'Hala SP Banino', coaches: ['Ania'] };
@@ -49,5 +49,13 @@ describe('seriesDates', () => {
     expect(parseSeriesInput({ weekdays: ['2', '4', '2'], until: '2027-06-30' })).toEqual({ weekdays: [2, 4], until: '2027-06-30' });
     expect(() => parseSeriesInput({ weekdays: [8], until: '2027-06-30' })).toThrow(/Dni tygodnia/);
     expect(() => parseSeriesInput({ weekdays: [1], until: 'x' })).toThrow(/Do/);
+  });
+});
+
+describe('calSummary', () => {
+  it('trening bez dublowania słowa, reszta z etykietą typu, cały klub = UKS Banino', () => {
+    expect(calSummary({ type: 'trening', team: 'młodziczki (2011+)', title: 'Trening · Ania', coaches: ['Ania'] })).toBe('młodziczki (2011+) · Trening · Ania');
+    expect(calSummary({ type: 'mecz', team: 'młodzicy (2011+)', title: 'vs MTS Kwidzyn', coaches: [] })).toBe('młodzicy (2011+) · Mecz · vs MTS Kwidzyn');
+    expect(calSummary({ type: 'inne', team: null, title: 'Zebranie kadry', coaches: [] })).toBe('UKS Banino · Inne · Zebranie kadry');
   });
 });

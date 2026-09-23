@@ -120,3 +120,10 @@ export function fieldsForDate(v: CalInput, date: string): CalPatchFields {
   const dayOffset = v.endDate ? Math.round((Date.parse(v.endDate) - Date.parse(v.date)) / 86_400_000) : 0;
   return inputToFields({ ...v, date, endDate: dayOffset ? addDays(date, dayOffset) : null } as CalInput);
 }
+
+/** `SUMMARY` w .ics i nagłówek karty: „<Grupa> · <Typ> · <tytuł>"; trening już ma „Trening · trener" w tytule. */
+export function calSummary(e: Pick<CalEvent, 'type' | 'team' | 'title' | 'coaches'>): string {
+  const team = e.team ?? 'UKS Banino';
+  if (e.type === 'trening') return `${team} · ${e.title}`;
+  return `${team} · ${CAL_TYPE_LABEL[e.type]} · ${e.title}`;
+}
