@@ -90,6 +90,15 @@ describe('TurniejCreative', () => {
     expect(await isAllWhite(png, { left: 0, top: 1170, width: 1080, height: 10 })).toBe(true);
   });
 
+  it('3 drużyny w polu „Drużyny" (wariant ze zdjęciem, najciaśniejszy) nie schodzą poniżej y=1170', async () => {
+    const threeTeams = {
+      ...post,
+      form: { ...(post.form as object), team: 'Młodziczki 2014 + Młodzicy 2014 + Juniorki młodsze', result: '2. miejsce w kategorii młodzików' },
+    } as unknown as Post;
+    const png = await renderPng(<TurniejCreative post={threeTeams} photo={await fakePhoto()} partnerBand={false} />);
+    // pod ostatnią linią komórek musi zostać biel — inaczej pas partnerów (1180+) zasłoniłby nazwy drużyn
+    expect(await isAllWhite(png, { left: 0, top: 1170, width: 1080, height: 10 })).toBe(true);
+  });
   it('nazwa turnieju bez spacji (60 znaków, limit schematu forms.ts) nie wyjeżdża poza prawą krawędź planszy', async () => {
     const longNamePost = {
       ...post,

@@ -12,7 +12,7 @@ export function OgloszenieFields({ values, set, teams }: FieldsProps) {
         <label htmlFor="body">Treść</label>
         <textarea id="body" required value={values.body ?? ''} onChange={(e) => set('body', e.target.value)} placeholder="Co, kiedy, gdzie, dla kogo" />
       </div>
-      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} allowAll />
+      <TeamSelect value={values.team ?? ''} onChange={(v) => set('team', v)} teams={teams} allowAll multi />
       <div className="row">
         <div className="field">
           <label htmlFor="date">Data</label>

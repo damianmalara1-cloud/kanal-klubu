@@ -52,7 +52,8 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
   return (
     <main className="wrap">
       <p className="kicker">UKS Banino · Kanał Klubu</p>
-      <Link className="cal-entry" href={`/t/${secret}/kalendarz`}>
+      {/* aria-label: bez niego nazwa linku sklejałaby się z podtytułem („…mecze · turnieje…") i łapała na substring „Mecz"/„Turniej" (czytniki, testy). */}
+      <Link className="cal-entry" href={`/t/${secret}/kalendarz`} aria-label="Kalendarz klubu">
         <span className="cal-entry-text">
           <span className="cal-entry-title">Kalendarz klubu</span>
           <span className="cal-entry-sub">Treningi · mecze · turnieje wszystkich grup</span>

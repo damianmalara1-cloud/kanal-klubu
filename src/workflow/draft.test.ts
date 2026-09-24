@@ -26,6 +26,11 @@ describe('createDraft', () => {
     expect((await createDraft(mecz('dziewczęta 2013+'))).partnerInfo).toBe(false);
   });
 
+  it('partnerInfo przy kilku drużynach: wystarczy, że jedna jest w KLUB PRO', async () => {
+    const turniej = (team: string) => ({ author: 'Ania', type: 'turniej' as const, ip: '1.1.1.1', form: { name: 'Buk', team } });
+    expect((await createDraft(turniej('dziewczęta 2013+ + młodziczki (2011+)'))).partnerInfo).toBe(true);
+    expect((await createDraft(turniej('dziewczęta 2013+ + oldboye'))).partnerInfo).toBe(false);
+  });
   it('mecz bez drużyny → błąd walidacji (drużyna decyduje o stopce KLUB PRO)', async () => {
     await expect(createDraft(mecz(null))).rejects.toThrow();
   });

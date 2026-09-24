@@ -17,6 +17,15 @@ describe('parseForm', () => {
     expect(() => parseForm('ogloszenie', { title: 'Nabór', body: '' })).toThrow();
     expect(parseForm('ogloszenie', { title: 'Nabór', body: 'Wtorki 17:00', team: 'cały klub' })).toMatchObject({ team: null });
   });
+  it('turniej/sukces/ogloszenie: kilka drużyn sklejonych „ + " przechodzi, więcej niż 3 odpada', () => {
+    const two = 'Młodziczki 2014 + Młodzicy 2014';
+    expect(parseForm('turniej', { name: 'Buk', team: two })).toMatchObject({ team: two });
+    expect(parseForm('sukces', { names: ['A B'], kind: 'medal', team: two })).toMatchObject({ team: two });
+    expect(parseForm('ogloszenie', { title: 'T', body: 'B', team: two })).toMatchObject({ team: two });
+    expect(() => parseForm('turniej', { name: 'Buk', team: 'A + B + C + D' })).toThrow();
+    // mecz zostaje przy jednej drużynie (limit 40 znaków)
+    expect(() => parseForm('mecz', { team: 'Młodziczki 2014 + Młodzicy 2014 + Juniorki młodsze', opponent: 'X', scoreHome: '1', scoreAway: '2' })).toThrow();
+  });
   it('turniej wymaga nazwy', () => {
     expect(parseForm('turniej', { name: 'Kaszubski Turniej', result: '2. miejsce', team: 'młodzicy (2011+)' })).toMatchObject({ name: 'Kaszubski Turniej' });
   });

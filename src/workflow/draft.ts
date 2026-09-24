@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { splitTeams } from '@/domain/teams';
 import sharp from 'sharp';
 import { getConfig } from '@/config';
 import { getRepo } from '@/db';
@@ -35,7 +36,8 @@ export async function createDraft(input: { author: string; type: PostType; form:
     type: input.type,
     form,
     ip: input.ip,
-    partnerInfo: team !== null && c.klubProTeams.includes(team),
+    // Kilka drużyn w poście: stopka KLUB PRO, jeśli którakolwiek jest w programie (obowiązek §8 dotyczy posta o niej).
+    partnerInfo: splitTeams(team).some((t) => c.klubProTeams.includes(t)),
     purgeAfter: plusHours(nowIso(), 24),
   });
   await recordEvent({ type: 'draft_created', author: post.author, postId: post.id, meta: { postType: post.type } });

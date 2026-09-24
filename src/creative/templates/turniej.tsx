@@ -1,4 +1,5 @@
 import type { TurniejForm } from '@/domain/types';
+import { splitTeams, teamLabel } from '@/domain/teams';
 import type { CreativeProps } from '../types';
 import { BarRow, Canvas, DataCell, Kicker, Logo, M, PartnerBand, PhotoTop, FONT_DISPLAY, upperPl } from '../parts';
 
@@ -38,7 +39,8 @@ export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
         {(f.place || f.team) && (
           <div style={{ display: 'flex', marginTop: 60, gap: 40 }}>
             {f.place && <DataCell label="Miejsce" value={f.place} width={455} big={40} />}
-            {f.team && <DataCell label="Drużyna" value={f.team} width={455} big={40} />}
+            {/* Kilka drużyn: mniejsza czcionka, inaczej 2–3 nazwy w 455 px schodzą pod pas partnerów (1180 px) */}
+            {f.team && <DataCell label={teamLabel(f.team)} value={f.team} width={455} big={splitTeams(f.team).length > 1 ? 30 : 40} />}
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import type { MeczForm, OgloszenieForm, Post, SukcesForm, TurniejForm } from '@/domain/types';
+import { splitTeams } from '@/domain/teams';
 import { EXAMPLES } from './examples';
 
 const KIND_PL: Record<SukcesForm['kind'], string> = { kadra: 'powołanie do kadry', medal: 'medal', wyroznienie: 'wyróżnienie', inne: 'sukces' };
@@ -36,6 +37,14 @@ FORMAT ODPOWIEDZI: wyłącznie JSON bez komentarzy:
 ${examples}`;
 }
 
+/** Kilka drużyn w poście → „Drużyny: A, B." — model ma wiedzieć, że to dwie grupy klubu na jednej imprezie,
+ * a nie jedna drużyna o dziwnej nazwie. */
+function teamLine(team: string | null): string {
+  const t = splitTeams(team);
+  if (t.length === 0) return '';
+  return t.length === 1 ? `Drużyna: ${t[0]}.` : `Drużyny: ${t.join(', ')} (wszystkie z UKS Banino).`;
+}
+
 function describeForm(post: Post): string {
   const f = post.form;
   switch (post.type) {
@@ -58,7 +67,7 @@ function describeForm(post: Post): string {
         `Typ: turniej.`,
         `Nazwa: ${t.name}.`,
         t.place ? `Miejsce: ${t.place}.` : '',
-        t.team ? `Drużyna: ${t.team}.` : '',
+        teamLine(t.team),
         t.result ? `Wynik/miejsce: ${t.result}.` : '',
         t.notes ? `Uwagi trenera: ${t.notes}` : '',
       ]
@@ -70,7 +79,7 @@ function describeForm(post: Post): string {
       return [
         `Typ: sukces (${KIND_PL[s.kind]}).`,
         `Kto: ${s.names.join(', ')}.`,
-        s.team ? `Drużyna: ${s.team}.` : '',
+        teamLine(s.team),
         s.details ? `Szczegóły: ${s.details}` : '',
       ]
         .filter(Boolean)
@@ -82,7 +91,7 @@ function describeForm(post: Post): string {
         `Typ: ogłoszenie.`,
         `Tytuł: ${o.title}.`,
         `Treść: ${o.body}`,
-        o.team ? `Drużyna: ${o.team}.` : 'Dotyczy całego klubu.',
+        o.team ? teamLine(o.team) : 'Dotyczy całego klubu.',
         o.date ? `Data: ${o.date}.` : '',
         o.time ? `Godzina: ${o.time}.` : '',
         o.place ? `Miejsce: ${o.place}.` : '',

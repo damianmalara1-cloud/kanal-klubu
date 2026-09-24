@@ -1,9 +1,93 @@
 'use client';
 import { useState } from 'react';
+import { joinTeams, MAX_TEAMS_PER_POST, splitTeams, TEAM_SEP } from '@/domain/teams';
 
 /** Wartość opcji „inna" — celowo taka, jakiej nie da się wpisać w `TEAMS` w konfiguracji, żeby nazwa
  * prawdziwej drużyny nigdy nie zderzyła się z sentinelem. */
 const OTHER = '__inna__';
+
+/** Kilka drużyn naraz (turniej, sukces, ogłoszenie): chipy zamiast listy rozwijanej. Wartość to nadal jeden
+ * string sklejony `TEAM_SEP` — to, co widzi baza, prompt i plansza. Jedna impreza z dwiema grupami klubu
+ * (Młodziczki 2014 + Młodzicy 2014) to jeden post, nie dwa. Wolny tekst „inna" może być jedną z pozycji. */
+function TeamChips({
+  value,
+  onChange,
+  teams,
+  allowAll,
+  allowOther,
+  id,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  teams: string[];
+  allowAll: boolean;
+  allowOther: boolean;
+  id: string;
+}) {
+  const parts = splitTeams(value);
+  const picked = teams.filter((t) => parts.includes(t));
+  // Wolny tekst = pierwsza pozycja spoza listy (może być tylko jedna). Tryb wyprowadzony z wartości, jak w select:
+  // wartość odtworzona z localStorage sama pokazuje pole tekstowe.
+  const other = parts.find((t) => !teams.includes(t)) ?? '';
+  const [otherMode, setOtherMode] = useState(false);
+  const showOther = allowOther && (otherMode || other !== '');
+  const full = parts.length >= MAX_TEAMS_PER_POST;
+  const emit = (p: string[], o: string) => onChange(joinTeams([...teams.filter((t) => p.includes(t)), o]));
+  const toggle = (t: string) => emit(picked.includes(t) ? picked.filter((x) => x !== t) : [...picked, t], other);
+  return (
+    <div className="field">
+      <label id={`${id}-label`}>Drużyna (można kilka)</label>
+      <div className="chips" role="group" aria-labelledby={`${id}-label`}>
+        {teams.map((t) => {
+          const on = picked.includes(t);
+          return (
+            <button key={t} type="button" className="chip" aria-pressed={on} disabled={!on && full} onClick={() => toggle(t)}>
+              {t}
+            </button>
+          );
+        })}
+        {allowOther && (
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={showOther}
+            disabled={!showOther && full}
+            onClick={() => {
+              if (showOther) {
+                setOtherMode(false);
+                emit(picked, '');
+              } else setOtherMode(true);
+            }}
+          >
+            inna
+          </button>
+        )}
+      </div>
+      {showOther && (
+        <div className="field" style={{ marginTop: 8 }}>
+          <label htmlFor={`${id}-inna`}>Jaka drużyna?</label>
+          <input
+            id={`${id}-inna`}
+            aria-label="Inna drużyna"
+            value={other}
+            maxLength={40}
+            placeholder="np. oldboye"
+            onChange={(e) => emit(picked, e.target.value.replaceAll(TEAM_SEP.trim(), ' '))}
+          />
+        </div>
+      )}
+      <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+        {parts.length === 0
+          ? allowAll
+            ? 'Nic nie zaznaczone = cały klub.'
+            : 'Zaznacz przynajmniej jedną.'
+          : full
+            ? `Maksymalnie ${MAX_TEAMS_PER_POST} drużyny w jednym poście.`
+            : 'Kilka grup na jednej imprezie? Zaznacz wszystkie — wyjdzie jeden post.'}
+      </p>
+    </div>
+  );
+}
 
 export function TeamSelect({
   value,
@@ -12,11 +96,14 @@ export function TeamSelect({
   allowAll = false,
   allowOther = true,
   required = false,
+  multi = false,
   id = 'team',
 }: {
   value: string;
   onChange: (v: string) => void;
   teams: string[];
+  /** Turniej/sukces/ogłoszenie: kilka drużyn naraz (chipy). Mecz i kalendarz zostają przy jednej (select). */
+  multi?: boolean;
   allowAll?: boolean;
   /** Kalendarz (I3) woła z `false`: drużyna wydarzenia musi zostać z listy `TEAMS`, bo od niej zależy filtr/kolor/
    * `.ics` — wolny tekst tworzyłby drużyny, których żadna z tych rzeczy nie rozpoznaje. Formularze postów
@@ -34,6 +121,8 @@ export function TeamSelect({
   // Uwaga: wolny tekst z założenia nie trafi do KLUB_PRO_TEAMS, więc taki post nie dostanie stopki programu.
   const outside = allowOther && value !== '' && !teams.includes(value);
   const [freeMode, setFreeMode] = useState(false);
+  // Po hookach (reguła hooków) — `multi` jest stałe dla instancji, ale wczesny return przed useState i tak jest błędem lintera.
+  if (multi) return <TeamChips value={value} onChange={onChange} teams={teams} allowAll={allowAll} allowOther={allowOther} id={id} />;
   const free = allowOther && (freeMode || outside);
   return (
     <>

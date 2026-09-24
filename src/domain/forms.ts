@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { MeczForm, OgloszenieForm, Post, PostForm, PostType, SukcesForm, TurniejForm } from './types';
+import { MAX_TEAMS_PER_POST, splitTeams, TEAM_MULTI_MAX } from './teams';
 
 const str = z.string().trim();
 const opt = str.transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null);
@@ -12,6 +13,16 @@ const textOpt = (max: number) => str.max(max).transform((s) => (s === '' ? null 
  * (§8 umowy z Fundacją), którego klub nie dopilnował w 2026. W ogłoszeniu drużyna zostaje opcjonalna
  * („cały klub" = null to legalny wybór). Max 40 = limit również dla wolnego tekstu z opcji „inna". */
 const teamRequired = str.min(1).max(40);
+/** Turniej/sukces: jedna impreza, kilka drużyn klubu (np. Młodziczki 2014 + Młodzicy 2014) — jedno pole,
+ * sklejone `TEAM_SEP` (patrz `domain/teams.ts`), max 3 drużyny, żeby zmieściły się na planszy. */
+const tooMany = { message: 'za dużo drużyn' };
+const teamsRequired = str.min(1).max(TEAM_MULTI_MAX).refine((s) => splitTeams(s).length <= MAX_TEAMS_PER_POST, tooMany);
+const teamsOpt = str
+  .max(TEAM_MULTI_MAX)
+  .transform((s) => (s === '' || s === 'cały klub' ? null : s))
+  .nullable()
+  .default(null)
+  .refine((s) => splitTeams(s).length <= MAX_TEAMS_PER_POST, tooMany);
 const SCORE_MIN = 0, SCORE_MAX = 199;
 const num = z.coerce.number().int().min(SCORE_MIN).max(SCORE_MAX);
 
@@ -51,11 +62,11 @@ const mecz = z.object({
   team: teamRequired, opponent: str.min(1).max(48), scoreHome: num, scoreAway: num,
   venue: z.enum(['dom', 'wyjazd']).default('dom'), venueCity: opt, notes: opt,
 });
-const turniej = z.object({ name: str.min(1).max(60), place: opt, team: teamRequired, result: resultOpt, notes: opt });
+const turniej = z.object({ name: str.min(1).max(60), place: opt, team: teamsRequired, result: resultOpt, notes: opt });
 const sukces = z.object({
   // max 40/nazwisko: rezerwa na skalowanie czcionki listy nazwisk w kreacji (patrz `namesStyle` w sukces.tsx)
   names: z.array(str.max(40)).transform((a) => a.filter(Boolean)).pipe(z.array(z.string()).min(1)),
-  kind: z.enum(['kadra', 'medal', 'wyroznienie', 'inne']), team: teamRequired,
+  kind: z.enum(['kadra', 'medal', 'wyroznienie', 'inne']), team: teamsRequired,
   // max 120: opis pod nazwiskami w wariancie typograficznym, żeby nie wjechał w pas partnerów
   details: textOpt(120),
 });
@@ -68,7 +79,7 @@ const ogloszenie = z.object({
   title: str.min(1).max(60),
   // max 600: treść ogłoszenia idzie do podpisu posta, nie na samą planszę
   body: str.min(1).max(600),
-  team: opt,
+  team: teamsOpt,
   // max 60/pole: date/time/place renderują się na planszy przez DataCell (kolumna ~299px) — bez limitu
   // bardzo długa wartość mogłaby się nie zmieścić nawet z łamaniem
   date: optMax(60), time: optMax(60), place: optMax(60),

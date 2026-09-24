@@ -25,7 +25,7 @@ npm run dev
 | `APP_URL` | tak | `https://uks-kanal-klubu.vercel.app` | Bazowy URL appki — nagłówek `HTTP-Referer`/`X-Title` do OpenRouter i budowa linków do plików w trybie pamięciowym (dev/mock). |
 | `COACH_LINK_SECRET` | tak (min. 16 znaków) | `openssl rand -hex 16` | Sekret w linku trenera (`/t/<sekret>`) — jedyna „autoryzacja" w appce, bez logowania. |
 | `COACH_NAMES` | tak | `Ania,Krzysiek` | Lista imion trenerów do wyboru w formularzu, po przecinku. |
-| `TEAMS` | tak | `młodziczki (2011+);młodzicy (2011+);…` | Lista drużyn do wyboru w formularzu, średnikiem. |
+| `TEAMS` | tak | `młodziczki (2011+);młodzicy (2011+);…` | Lista drużyn do wyboru w formularzu, średnikiem. Turniej/sukces/ogłoszenie przyjmują kilka drużyn naraz (chipy, max 3) — w bazie i na planszy to jedno pole `team` sklejone ` + ` (`domain/teams.ts`); stopka KLUB PRO wchodzi, gdy którakolwiek z nich jest w `KLUB_PRO_TEAMS`. Mecz zostaje przy jednej drużynie. |
 | `KLUB_PRO_TEAMS` | tak (może być pusta) | `młodziczki (2011+);młodzicy (2011+)` | Podzbiór `TEAMS` objęty programem KLUB PRO — decyduje, czy post dostaje stopkę/pas partnerów (razem z `PARTNER_INFO_ENABLED`). |
 | `OPENROUTER_API_KEY` | tak (chyba że `AI_MOCK=true`) | — | Klucz do OpenRouter (generacja tekstu, model Haiku). |
 | `AI_MODEL` | nie | `anthropic/claude-haiku-4.5` | Model używany do generacji opisu. |
