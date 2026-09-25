@@ -57,7 +57,7 @@ const fmtDay = (iso: string) => fmtWhen(iso).replace(/ \d{2}:\d{2}$/, '');
 const fmtTimeOnly = (iso: string) => fmtWhen(iso).slice(-5);
 
 const CHANGE_LABEL: Record<string, string> = {
-  startsAt: 'początek', endsAt: 'koniec', place: 'miejsce', team: 'drużyna',
+  startsAt: 'początek', endsAt: 'koniec', place: 'miejsce', team: 'drużyna', teams: 'drużyna',
   title: 'tytuł', coaches: 'trener', details: 'szczegóły', allDay: 'cały dzień',
 };
 /** `other` to wartość PO DRUGIEJ stronie strzałki (from↔to) — dla `startsAt`/`endsAt` decyduje, czy zmiana

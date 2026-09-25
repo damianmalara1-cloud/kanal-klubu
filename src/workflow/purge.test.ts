@@ -93,7 +93,7 @@ describe('purge — retencja dziennika', () => {
 
 describe('purge — kosz kalendarza', () => {
   it('kosz kalendarza: kasuje starsze niż 30 dni, młodsze zostają', async () => {
-    const mk = (d: string) => getCalendar().create({ type: 'inne', team: null, title: 't', startsAt: `${d}T10:00:00.000Z`, endsAt: `${d}T11:00:00.000Z`, allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
+    const mk = (d: string) => getCalendar().create({ type: 'inne', teams: [], title: 't', startsAt: `${d}T10:00:00.000Z`, endsAt: `${d}T11:00:00.000Z`, allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
     const old = await mk('2026-08-01'), fresh = await mk('2026-08-02');
     await getCalendar().softDelete([old.id], 'Ania', '2026-08-10T00:00:00.000Z');
     await getCalendar().softDelete([fresh.id], 'Ania', '2026-09-20T00:00:00.000Z');

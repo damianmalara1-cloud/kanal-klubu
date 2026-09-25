@@ -5,21 +5,32 @@ import type { CalDetails, CalEvent, CalType } from '@/domain/calendar';
 import type { CalendarRepo, CalPatch, NewCalEvent } from './types';
 
 const iso = (v: unknown) => new Date(v as string).toISOString();
+/** `teams` (0005) z przejściowym fallbackiem na starą kolumnę `team` — wiersz sprzed migracji nie może zgubić drużyny. */
+const rowTeams = (r: Record<string, unknown>): string[] => {
+  const a = r.teams as string[] | null | undefined;
+  if (Array.isArray(a) && a.length) return a;
+  return typeof r.team === 'string' && r.team ? [r.team] : [];
+};
+/** Literał tablicy Postgresa z cytowanymi elementami — nazwy drużyn mają spacje, nawiasy i „+" („młodzicy (2011+)"),
+ * a `.contains(col, [..])` z supabase-js skleja elementy bez cytowania. */
+export const pgArray = (a: string[]) => `{${a.map((s) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`).join(',')}}`;
 export const fromRow = (r: Record<string, unknown>): CalEvent => ({
-  id: String(r.id), type: r.type as CalType, team: (r.team as string | null) ?? null, title: String(r.title),
+  id: String(r.id), type: r.type as CalType, teams: rowTeams(r), title: String(r.title),
   startsAt: iso(r.starts_at), endsAt: iso(r.ends_at), allDay: Boolean(r.all_day), place: (r.place as string | null) ?? null,
   coaches: (r.coaches as string[] | null) ?? [], details: (r.details as CalDetails | null) ?? {}, seriesId: (r.series_id as string | null) ?? null,
   createdBy: String(r.created_by), updatedBy: String(r.updated_by), createdAt: iso(r.created_at), updatedAt: iso(r.updated_at),
   deletedAt: r.deleted_at == null ? null : iso(r.deleted_at), deletedBy: (r.deleted_by as string | null) ?? null,
 });
 export const toInsert = (e: NewCalEvent) => ({
-  type: e.type, team: e.team, title: e.title, starts_at: e.startsAt, ends_at: e.endsAt, all_day: e.allDay, place: e.place,
+  type: e.type, teams: e.teams, team: e.teams[0] ?? null, title: e.title, starts_at: e.startsAt, ends_at: e.endsAt, all_day: e.allDay, place: e.place,
   coaches: e.coaches, details: e.details, series_id: e.seriesId, created_by: e.by, updated_by: e.by,
 });
-const PATCH_COL: Record<keyof CalPatch, string> = { type: 'type', team: 'team', title: 'title', startsAt: 'starts_at', endsAt: 'ends_at', allDay: 'all_day', place: 'place', coaches: 'coaches', details: 'details', seriesId: 'series_id' };
+const PATCH_COL: Record<keyof CalPatch, string> = { type: 'type', teams: 'teams', title: 'title', startsAt: 'starts_at', endsAt: 'ends_at', allDay: 'all_day', place: 'place', coaches: 'coaches', details: 'details', seriesId: 'series_id' };
 export const toPatch = (p: CalPatch, by: string) => {
   const out: Record<string, unknown> = { updated_by: by, updated_at: nowIso() };
   for (const k of Object.keys(p) as (keyof CalPatch)[]) if (p[k] !== undefined) out[PATCH_COL[k]] = p[k];
+  // Stara kolumna `team` (sprzed 0005) trzyma pierwszą drużynę — do czasu jej usunięcia nie może się rozjechać z `teams`.
+  if (p.teams !== undefined) out.team = p.teams[0] ?? null;
   return out;
 };
 const validIds = (ids: string[]) => ids.filter((i) => UUID_RE.test(i));
@@ -61,19 +72,17 @@ export class SupabaseCalendar implements CalendarRepo {
     const { data, error } = await this.q().select('*').eq('id', id).maybeSingle();
     if (error) throw error; return data ? fromRow(data) : null;
   }
-  /** `team` string: zwraca wydarzenia tej drużyny ORAZ całego klubu (`team IS NULL`) — reguła kontrolera (I6):
-   * trener drużyny musi widzieć zbiórki całego klubu w swoim filtrze/subskrypcji `.ics`. Dwa zapytania +
-   * scalenie zamiast `.or('team.eq.…,team.is.null')` — nazwy drużyn mają nawiasy (np. „młodzicy (2011+)"),
-   * a PostgREST wymaga wtedy ręcznego cytowania wartości w składni `.or()`, co jest kruche; osobne zapytania
-   * są prostsze do zweryfikowania i nie zależą od znaków w nazwie drużyny. `team === null` zostaje bez zmian
-   * („tylko klubowe"), `team === undefined` bez zmian (wszystko). */
+  /** `team` string: zwraca wydarzenia, w których ta drużyna jest jedną z `teams`, ORAZ całego klubu (`teams = {}`) —
+   * reguła kontrolera (I6): trener drużyny musi widzieć zbiórki całego klubu w swoim filtrze/subskrypcji `.ics`.
+   * Dwa zapytania + scalenie zamiast `.or(...)` — nazwy drużyn mają nawiasy (np. „młodzicy (2011+)"), a składnia
+   * `.or()` wymaga wtedy kruchego ręcznego cytowania. `team === null` = „tylko klubowe", `undefined` = wszystko. */
   async listRange(fromIso: string, toIso: string, team?: string | null) {
     const base = () => this.q().select('*').is('deleted_at', null).lt('starts_at', toIso).gt('ends_at', fromIso).order('starts_at', { ascending: true });
     if (team === undefined) return (await pageAll<Record<string, unknown>>(base())).map(fromRow);
-    if (team === null) return (await pageAll<Record<string, unknown>>(base().is('team', null))).map(fromRow);
+    if (team === null) return (await pageAll<Record<string, unknown>>(base().eq('teams', '{}'))).map(fromRow);
     const [teamRows, clubRows] = await Promise.all([
-      pageAll<Record<string, unknown>>(base().eq('team', team)),
-      pageAll<Record<string, unknown>>(base().is('team', null)),
+      pageAll<Record<string, unknown>>(base().filter('teams', 'cs', pgArray([team]))),
+      pageAll<Record<string, unknown>>(base().eq('teams', '{}')),
     ]);
     return [...teamRows, ...clubRows].map(fromRow).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   }

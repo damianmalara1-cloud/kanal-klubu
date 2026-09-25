@@ -40,7 +40,7 @@ export function EventForm({
 
   return (
     <>
-      <TeamSelect id={id('team')} value={value.team} onChange={(v) => set('team', v)} teams={teams} allowAll={value.type === 'inne'} allowOther={false} required={value.type !== 'inne'} />
+      <TeamSelect id={id('team')} value={value.team} onChange={(v) => set('team', v)} teams={teams} allowAll={value.type === 'inne'} allowOther={false} required={value.type !== 'inne'} multi calendar />
 
       {value.type === 'mecz' && (
         <div className="field">

@@ -4,7 +4,7 @@ vi.mock('@/config', () => ({ getConfig: () => testConfig({ coachNames: ['Ania'],
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 import { createEventAction, createSeriesAction, updateEventAction, deleteEventAction, restoreAction } from './actions';
 const S = 'abcdefghijklmnop';
-const T = { type: 'trening', team: 'A', date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] };
+const T = { type: 'trening', teams: ['A'], date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] };
 beforeEach(() => resetAdapters());
 describe('kalendarz actions', () => {
   it('zły sekret → Nieprawidłowy link; brak imienia → błąd; nieznany autor (I2) → błąd', async () => {

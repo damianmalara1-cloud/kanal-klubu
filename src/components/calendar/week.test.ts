@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { groupByDay, dayLabel, fmtHour, teamHref } from './week';
 import type { CalEvent } from '@/domain/calendar';
-const ev = (id: string, startsAt: string, endsAt: string): CalEvent => ({ id, type: 'turniej', team: 'A', title: 'T', startsAt, endsAt, allDay: false, place: null, coaches: [], details: {}, seriesId: null, createdBy: 'a', updatedBy: 'a', createdAt: 'x', updatedAt: 'x', deletedAt: null, deletedBy: null });
+const ev = (id: string, startsAt: string, endsAt: string): CalEvent => ({ id, type: 'turniej', teams: ['A'], title: 'T', startsAt, endsAt, allDay: false, place: null, coaches: [], details: {}, seriesId: null, createdBy: 'a', updatedBy: 'a', createdAt: 'x', updatedAt: 'x', deletedAt: null, deletedBy: null });
 describe('groupByDay', () => {
   it('7 dni od poniedziałku; turniej pt–nd w 3 dniach; trening w 1', () => {
     const days = groupByDay('2026-10-05', [ev('t', '2026-10-09T07:00:00.000Z', '2026-10-11T14:00:00.000Z'), ev('x', '2026-10-06T14:30:00.000Z', '2026-10-06T16:00:00.000Z')]);

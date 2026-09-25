@@ -3,7 +3,7 @@ import { getCalendar } from '@/calendar';
 import type { CalPatch } from '@/calendar';
 import { recordEvent } from '@/events';
 import type { CalEventMeta, EventType } from '@/events/types';
-import { fieldsForDate, inputToFields, parseCalInput, parseSeriesInput, seriesDates, type CalEvent, type CalPatchFields } from '@/domain/calendar';
+import { calTeamsLabel, fieldsForDate, inputToFields, parseCalInput, parseSeriesInput, seriesDates, type CalEvent, type CalPatchFields } from '@/domain/calendar';
 import { monthRange } from '@/admin/month';
 import { addDays, isoToLocal, localToIso, nowIso } from '@/lib/dates';
 import { AppError } from '@/lib/errors';
@@ -12,7 +12,7 @@ import { newId } from '@/lib/ids';
 export type Scope = 'one' | 'following';
 const ctx = () => { const c = getConfig(); return { teams: c.teams, coachNames: c.coachNames }; };
 const metaOf = (e: CalEvent, extra: Partial<CalEventMeta> = {}): CalEventMeta =>
-  ({ eventId: e.id, ...(e.seriesId ? { seriesId: e.seriesId } : {}), type: e.type, team: e.team, title: e.title, startsAt: e.startsAt, ...extra });
+  ({ eventId: e.id, ...(e.seriesId ? { seriesId: e.seriesId } : {}), type: e.type, team: calTeamsLabel(e.teams), title: e.title, startsAt: e.startsAt, ...extra });
 const rec = (type: EventType, by: string, meta: CalEventMeta) => recordEvent({ type, author: by, meta: meta as unknown as Record<string, unknown> });
 
 export async function getEvent(id: string): Promise<CalEvent> {
@@ -38,7 +38,7 @@ export async function createSeries(raw: unknown, rawSeries: unknown, by: string)
   return { seriesId, count: rows.length, first: rows[0] };
 }
 
-const KEYS: (keyof CalPatchFields)[] = ['type', 'team', 'title', 'startsAt', 'endsAt', 'allDay', 'place', 'coaches', 'details'];
+const KEYS: (keyof CalPatchFields)[] = ['type', 'teams', 'title', 'startsAt', 'endsAt', 'allDay', 'place', 'coaches', 'details'];
 
 /** Forma porównywalna niezależnie od kolejności: tablice sortowane (kolejność `coaches` nie ma znaczenia),
  * klucze obiektów sortowane (jsonb z Postgresa nie gwarantuje kolejności `details`) — inaczej `same()` widziałby
@@ -64,10 +64,10 @@ export function diffFields(before: CalEvent, after: CalPatchFields): Record<stri
 export async function updateEvent(id: string, raw: unknown, by: string, scope: Scope) {
   const repo = getCalendar();
   const before = await getEvent(id);
-  // Drużyna mogła zniknąć z `TEAMS` po utworzeniu wydarzenia (I3) — bez dopisania jej tutaj `parseCalInput`
+  // Drużyny mogły zniknąć z `TEAMS` po utworzeniu wydarzenia (I3) — bez dopisania ich tutaj `parseCalInput`
   // odrzuciłby KAŻDĄ edycję tego wydarzenia jako „drużyna spoza listy", nawet zmianę samego miejsca.
   const c = ctx();
-  const input = parseCalInput(raw, before.team !== null ? { ...c, teams: [...c.teams, before.team] } : c);
+  const input = parseCalInput(raw, { ...c, teams: [...c.teams, ...before.teams] });
   if (scope === 'following' && before.seriesId) {
     // `changes` liczone względem pól przeliczonych na WŁASNĄ datę edytowanego wiersza (nie `input.date`) —
     // przy zakresie „następne" data z formularza jest ignorowana dla każdego wiersza serii (patrz pętla niżej),

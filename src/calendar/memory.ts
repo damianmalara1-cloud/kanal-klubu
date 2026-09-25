@@ -19,11 +19,11 @@ export class MemoryCalendar implements CalendarRepo {
   async create(e: NewCalEvent) { const r = this.make(e, nowIso()); this.rows.push(r); return clone(r); }
   async createMany(rows: NewCalEvent[]) { const now = nowIso(); const made = rows.map((e) => this.make(e, now)); this.rows.push(...made); return made.map(clone); }
   async get(id: string) { const r = this.rows.find((x) => x.id === id); return r ? clone(r) : null; }
-  /** `team` string: filtr drużyny ORAZ wydarzeń całego klubu (`team === null`) — reguła kontrolera (I6), ten
+  /** `team` string: wydarzenia z tą drużyną w `teams` ORAZ całego klubu (`teams` puste) — reguła kontrolera (I6), ten
    * sam kontrakt co `SupabaseCalendar.listRange`. `team === null` samo w sobie zostaje „tylko klubowe";
    * `team === undefined` bez zmian (wszystko). */
   async listRange(fromIso: string, toIso: string, team?: string | null) {
-    const match = (r: CalEvent) => team === undefined || (team === null ? r.team === null : r.team === team || r.team === null);
+    const match = (r: CalEvent) => team === undefined || (team === null ? r.teams.length === 0 : r.teams.length === 0 || r.teams.includes(team));
     return this.rows
       .filter((r) => r.deletedAt === null && r.startsAt < toIso && r.endsAt > fromIso && match(r))
       .sort(byStart).map(clone);

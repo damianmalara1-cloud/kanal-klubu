@@ -17,8 +17,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ se
     throw e;
   }
   const { teams: configTeams, coachNames, seasonEnd } = getConfig();
-  // Drużyna wydarzenia mogła zniknąć z `TEAMS` po jego utworzeniu (I3) — dopisana na końcu, żeby `<select>`
-  // w `EventForm` miał ją wśród opcji (bez tego formularz pokazywałby pustą wartość zamiast bieżącej drużyny).
-  const teams = event.team !== null && !configTeams.includes(event.team) ? [...configTeams, event.team] : configTeams;
+  // Drużyny wydarzenia mogły zniknąć z `TEAMS` po jego utworzeniu (I3) — dopisane na końcu, żeby chipy
+  // w `EventForm` je pokazały (bez tego zaznaczenie drużyny spoza listy byłoby niewidoczne i nie do odznaczenia).
+  const teams = [...configTeams, ...event.teams.filter((t) => !configTeams.includes(t))];
   return <EventDetailClient secret={secret} event={event} teams={teams} coachNames={coachNames} seasonEnd={seasonEnd} />;
 }

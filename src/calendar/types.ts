@@ -20,7 +20,7 @@ export interface CalendarRepo {
 }
 
 export const CAL_COLS: Record<keyof CalEvent, string> = {
-  id: 'id', type: 'type', team: 'team', title: 'title', startsAt: 'starts_at', endsAt: 'ends_at', allDay: 'all_day',
+  id: 'id', type: 'type', teams: 'teams', title: 'title', startsAt: 'starts_at', endsAt: 'ends_at', allDay: 'all_day',
   place: 'place', coaches: 'coaches', details: 'details', seriesId: 'series_id', createdBy: 'created_by', updatedBy: 'updated_by',
   createdAt: 'created_at', updatedAt: 'updated_at', deletedAt: 'deleted_at', deletedBy: 'deleted_by',
 };

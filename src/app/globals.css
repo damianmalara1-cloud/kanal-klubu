@@ -93,6 +93,7 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .cal-empty { margin: 0 0 4px; }
 .cal-card { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 10px 12px; margin: 0 0 8px; border: 1px solid var(--border-hairline); border-left: 6px solid; color: var(--text-primary); text-decoration: none; }
 .cal-when { font: 600 13px/1.2 var(--font-text); grid-row: 1 / span 2; align-self: start; padding-top: 3px; }
+.cal-teams { display: flex; flex-wrap: wrap; gap: 4px; }
 .cal-team { justify-self: start; font: 600 10px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: var(--radius-pill); }
 .cal-title { font: 600 16px/1.25 var(--font-text); } .cal-type { font-style: normal; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; color: var(--text-accent); }
 .cal-sub { font-size: 13px; grid-column: 2; }

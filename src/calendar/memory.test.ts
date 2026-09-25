@@ -3,7 +3,7 @@ import { MemoryCalendar } from './memory';
 import type { NewCalEvent } from './types';
 
 const row = (startsAt: string, endsAt: string, extra: Partial<NewCalEvent> = {}): NewCalEvent => ({
-  type: 'trening', team: 'A', title: 'Trening · Ania', startsAt, endsAt, allDay: false, place: null, coaches: ['Ania'], details: {}, seriesId: null, by: 'Ania', ...extra,
+  type: 'trening', teams: ['A'], title: 'Trening · Ania', startsAt, endsAt, allDay: false, place: null, coaches: ['Ania'], details: {}, seriesId: null, by: 'Ania', ...extra,
 });
 let repo: MemoryCalendar;
 beforeEach(() => { repo = new MemoryCalendar(); });
@@ -15,10 +15,15 @@ describe('MemoryCalendar', () => {
     expect(await repo.get(e.id)).toEqual(e);
     expect(await repo.get('nie-ma')).toBeNull();
   });
+  it('listRange: wydarzenie kilku drużyn widać pod filtrem każdej z nich, nie pod obcą', async () => {
+    const ab = await repo.create(row('2026-10-01T14:00:00.000Z', '2026-10-01T15:00:00.000Z', { teams: ['A', 'B'] }));
+    const r = (t: string) => repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z', t).then((x) => x.map((e) => e.id));
+    expect(await r('A')).toEqual([ab.id]); expect(await r('B')).toEqual([ab.id]); expect(await r('C')).toEqual([]);
+  });
   it('listRange: nakładające się, rosnąco, filtr drużyny (undefined=wszystkie, null=tylko klubowe, string=drużyna+klubowe), bez kosza', async () => {
     const a = await repo.create(row('2026-10-01T14:00:00.000Z', '2026-10-01T15:00:00.000Z'));
-    const b = await repo.create(row('2026-09-30T22:00:00.000Z', '2026-10-01T00:30:00.000Z', { team: 'B' }));
-    const c = await repo.create(row('2026-10-05T10:00:00.000Z', '2026-10-05T11:00:00.000Z', { team: null }));
+    const b = await repo.create(row('2026-09-30T22:00:00.000Z', '2026-10-01T00:30:00.000Z', { teams: ['B'] }));
+    const c = await repo.create(row('2026-10-05T10:00:00.000Z', '2026-10-05T11:00:00.000Z', { teams: [] }));
     await repo.create(row('2026-09-01T10:00:00.000Z', '2026-09-01T11:00:00.000Z'));
     const all = await repo.listRange('2026-10-01T00:00:00.000Z', '2026-10-08T00:00:00.000Z');
     expect(all.map((e) => e.id)).toEqual([b.id, a.id, c.id]);

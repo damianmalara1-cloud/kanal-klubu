@@ -1,10 +1,12 @@
 import type { CalEvent, CalType } from '@/domain/calendar';
 import { addDays, isoToLocal, weekdayOf } from '@/lib/dates';
+import { joinTeams, splitTeams } from '@/domain/teams';
 
 /** Stan kontrolowanego formularza wydarzenia — nadzbiór pól wszystkich typów (zamiast osobnego typu na
  * `mecz`/`turniej`/`inne`, żeby przełączanie typu w `EventForm` nie gubiło już wpisanych wartości pól
  * wspólnych). Czysty plik (bez JSX), żeby dało się z niego importować w teście `.ts` bez środowiska DOM —
  * `EventForm.tsx` importuje stąd te same funkcje. */
+/** `team` — drużyny sklejone `TEAM_SEP` (format chipów `TeamSelect multi`); `toRaw` rozcina je na `teams[]`. */
 export type FormValue = {
   type: CalType; team: string; date: string; endDate: string; startTime: string; endTime: string; allDay: boolean;
   place: string; coaches: string[]; notes: string; opponent: string; venue: 'dom' | 'wyjazd'; matchTime: string;
@@ -28,7 +30,7 @@ export function emptyForm(type: CalType, date: string, seasonEnd: string): FormV
  * zamienia '' na null dla `place`/`notes`, więc te dwa lecą wprost). */
 export function toRaw(v: FormValue): Record<string, unknown> {
   const base = {
-    type: v.type, team: v.team, date: v.date, endDate: v.endDate || null,
+    type: v.type, teams: splitTeams(v.team), date: v.date, endDate: v.endDate || null,
     startTime: v.allDay ? null : v.startTime || null, endTime: v.allDay ? null : v.endTime || null,
     allDay: v.allDay, place: v.place, coaches: v.coaches, notes: v.notes,
   };
@@ -49,7 +51,7 @@ export function fromEvent(e: CalEvent, seasonEnd: string): FormValue {
   const endDate = e.allDay ? addDays(en.date, -1) : en.date;
   return {
     ...emptyForm(e.type, s.date, seasonEnd),
-    team: e.team ?? '', endDate: endDate === s.date ? '' : endDate,
+    team: joinTeams(e.teams), endDate: endDate === s.date ? '' : endDate,
     startTime: e.allDay ? '' : s.time, endTime: e.allDay ? '' : en.time, allDay: e.allDay,
     place: e.place ?? '', coaches: e.coaches, notes: e.details.notes ?? '',
     opponent: e.details.opponent ?? '', venue: e.details.venue ?? 'dom', matchTime: e.details.matchTime ?? '',

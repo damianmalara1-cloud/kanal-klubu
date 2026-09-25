@@ -18,6 +18,7 @@ export interface CalEventMeta {
   eventId: string;
   seriesId?: string;
   type: CalType;
+  /** Drużyny sklejone „A + B” (`calTeamsLabel`); `null` = cały klub. String, nie tablica — stare wpisy dziennika mają ten sam kształt. */
   team: string | null;
   title: string;
   startsAt: string;

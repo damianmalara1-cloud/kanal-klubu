@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildIcs, escapeText, foldLine } from './ics';
 import type { CalEvent } from '@/domain/calendar';
-const base: CalEvent = { id: '11111111-1111-4111-8111-111111111111', type: 'trening', team: 'młodziczki (2011+)', title: 'Trening · Ania', startsAt: '2026-09-29T14:30:00.000Z', endsAt: '2026-09-29T16:00:00.000Z', allDay: false, place: 'Hala SP Banino, ul. Lotnicza', coaches: ['Ania'], details: { notes: 'przynieść; wodę' }, seriesId: null, createdBy: 'Ania', updatedBy: 'Ania', createdAt: '2026-09-20T10:00:00.000Z', updatedAt: '2026-09-21T10:00:00.000Z', deletedAt: null, deletedBy: null };
+const base: CalEvent = { id: '11111111-1111-4111-8111-111111111111', type: 'trening', teams: ['młodziczki (2011+)'], title: 'Trening · Ania', startsAt: '2026-09-29T14:30:00.000Z', endsAt: '2026-09-29T16:00:00.000Z', allDay: false, place: 'Hala SP Banino, ul. Lotnicza', coaches: ['Ania'], details: { notes: 'przynieść; wodę' }, seriesId: null, createdBy: 'Ania', updatedBy: 'Ania', createdAt: '2026-09-20T10:00:00.000Z', updatedAt: '2026-09-21T10:00:00.000Z', deletedAt: null, deletedBy: null };
 describe('ics', () => {
   it('escape: przecinek, średnik, nowa linia, backslash', () => {
     expect(escapeText('a, b; c\\d\ne')).toBe('a\\, b\\; c\\\\d\\ne');

@@ -5,14 +5,14 @@ import { createEvent, createSeries, updateEvent, deleteEvent, restoreEvents, res
 import { getCalendar } from '@/calendar';
 import { getEvents } from '@/events';
 
-const T = { type: 'trening', team: 'A', date: '2026-09-29', startTime: '16:30', endTime: '18:00', place: 'Hala', coaches: ['Ania'] };
+const T = { type: 'trening', teams: ['A'], date: '2026-09-29', startTime: '16:30', endTime: '18:00', place: 'Hala', coaches: ['Ania'] };
 const evTypes = async () => (await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z')).map((e) => e.type).reverse();
 beforeEach(() => resetAdapters());
 
 describe('createEvent / createSeries', () => {
   it('pojedynczy: zapis + cal_created z meta', async () => {
     const e = await createEvent(T, 'Ania');
-    expect(e).toMatchObject({ team: 'A', title: 'Trening · Ania', createdBy: 'Ania', seriesId: null });
+    expect(e).toMatchObject({ teams: ['A'], title: 'Trening · Ania', createdBy: 'Ania', seriesId: null });
     const [ev] = await getEvents().listRange('2000-01-01T00:00:00.000Z', '2100-01-01T00:00:00.000Z');
     expect(ev).toMatchObject({ type: 'cal_created', author: 'Ania', meta: { eventId: e.id, type: 'trening', team: 'A', startsAt: e.startsAt } });
   });
@@ -93,9 +93,9 @@ describe('updateEvent', () => {
   it('drużyna wycofana z TEAMS (I3) nie blokuje edycji pozostałych pól tego wydarzenia', async () => {
     // Wydarzenie stworzone bezpośrednio w repo (nie przez createEvent/parseCalInput), team spoza konfiguracji
     // testu (`teams: ['A', 'B']`) — symuluje drużynę usuniętą z `TEAMS` już PO utworzeniu terminu.
-    const e = await getCalendar().create({ type: 'trening', team: 'Stara', title: 'Trening', startsAt: '2026-09-29T14:30:00.000Z', endsAt: '2026-09-29T16:00:00.000Z', allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
-    const u = await updateEvent(e.id, { ...T, team: 'Stara', place: 'Nowa hala' }, 'Ania', 'one');
-    expect(u.event).toMatchObject({ team: 'Stara', place: 'Nowa hala' });
+    const e = await getCalendar().create({ type: 'trening', teams: ['Stara'], title: 'Trening', startsAt: '2026-09-29T14:30:00.000Z', endsAt: '2026-09-29T16:00:00.000Z', allDay: false, place: null, coaches: [], details: {}, seriesId: null, by: 'Ania' });
+    const u = await updateEvent(e.id, { ...T, teams: ['Stara'], place: 'Nowa hala' }, 'Ania', 'one');
+    expect(u.event).toMatchObject({ teams: ['Stara'], place: 'Nowa hala' });
   });
 });
 
@@ -136,15 +136,15 @@ describe('deleteEvent / restore', () => {
 
 describe('diffFields', () => {
   it('porównuje płytko, tablice i obiekty przez JSON', () => {
-    const before = { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania'], details: {} } as never;
-    expect(diffFields(before, { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: 'H', coaches: ['Ania'], details: {} })).toEqual({ place: { from: null, to: 'H' } });
+    const before = { type: 'trening', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania'], details: {} } as never;
+    expect(diffFields(before, { type: 'trening', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: 'H', coaches: ['Ania'], details: {} })).toEqual({ place: { from: null, to: 'H' } });
   });
   it('details z inną kolejnością kluczy (jsonb z Postgresa) nie tworzy fałszywej zmiany', () => {
-    const before = { type: 'mecz', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { opponent: 'X', venue: 'dom' } } as never;
-    expect(diffFields(before, { type: 'mecz', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { venue: 'dom', opponent: 'X' } })).toEqual({});
+    const before = { type: 'mecz', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { opponent: 'X', venue: 'dom' } } as never;
+    expect(diffFields(before, { type: 'mecz', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: [], details: { venue: 'dom', opponent: 'X' } })).toEqual({});
   });
   it('coaches w innej kolejności nie tworzy fałszywej zmiany', () => {
-    const before = { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania', 'Krzysiek'], details: {} } as never;
-    expect(diffFields(before, { type: 'trening', team: 'A', title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Krzysiek', 'Ania'], details: {} })).toEqual({});
+    const before = { type: 'trening', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Ania', 'Krzysiek'], details: {} } as never;
+    expect(diffFields(before, { type: 'trening', teams: ['A'], title: 't', startsAt: 's', endsAt: 'e', allDay: false, place: null, coaches: ['Krzysiek', 'Ania'], details: {} })).toEqual({});
   });
 });

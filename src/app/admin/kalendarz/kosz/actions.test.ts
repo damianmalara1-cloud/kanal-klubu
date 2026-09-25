@@ -15,7 +15,7 @@ describe('adminRestoreCalendarAction', () => {
     await expect(adminRestoreCalendarAction(fd({ id: 'x' }))).rejects.toThrow('REDIRECT /admin');
   });
   it('id → przywraca jeden; seriesId+deletedAt → całą serię z kosza; zawsze redirect do kosza', async () => {
-    const s = await createSeries({ type: 'trening', team: 'A', date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] }, { weekdays: [2], until: '2026-10-13' }, 'Ania');
+    const s = await createSeries({ type: 'trening', teams: ['A'], date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] }, { weekdays: [2], until: '2026-10-13' }, 'Ania');
     const rows = await getCalendar().listSeriesFrom(s.seriesId, '2000-01-01T00:00:00.000Z');
     await deleteEvent(rows[0].id, 'Ania', 'following');
     await expect(adminRestoreCalendarAction(fd({ id: rows[0].id }))).rejects.toThrow('REDIRECT /admin/kalendarz/kosz');
@@ -27,7 +27,7 @@ describe('adminRestoreCalendarAction', () => {
     expect((await getCalendar().get(rows[1].id))?.updatedBy).toBe('admin');
   });
   it('seriesId bez deletedAt: nic nie przywraca (formularz zawsze wysyła oba pola razem)', async () => {
-    const s = await createSeries({ type: 'trening', team: 'A', date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] }, { weekdays: [2], until: '2026-10-06' }, 'Ania');
+    const s = await createSeries({ type: 'trening', teams: ['A'], date: '2026-09-29', startTime: '16:30', endTime: '18:00', coaches: ['Ania'] }, { weekdays: [2], until: '2026-10-06' }, 'Ania');
     const rows = await getCalendar().listSeriesFrom(s.seriesId, '2000-01-01T00:00:00.000Z');
     await deleteEvent(rows[0].id, 'Ania', 'following');
     await expect(adminRestoreCalendarAction(fd({ seriesId: s.seriesId }))).rejects.toThrow('REDIRECT /admin/kalendarz/kosz');

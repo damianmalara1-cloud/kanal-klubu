@@ -16,6 +16,7 @@ function TeamChips({
   allowAll,
   allowOther,
   id,
+  calendar,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -23,6 +24,7 @@ function TeamChips({
   allowAll: boolean;
   allowOther: boolean;
   id: string;
+  calendar: boolean;
 }) {
   const parts = splitTeams(value);
   const picked = teams.filter((t) => parts.includes(t));
@@ -31,7 +33,8 @@ function TeamChips({
   const other = parts.find((t) => !teams.includes(t)) ?? '';
   const [otherMode, setOtherMode] = useState(false);
   const showOther = allowOther && (otherMode || other !== '');
-  const full = parts.length >= MAX_TEAMS_PER_POST;
+  // Limit 3 wynika z miejsca na planszy posta — wydarzenie w kalendarzu nie ma planszy, więc bez limitu.
+  const full = !calendar && parts.length >= MAX_TEAMS_PER_POST;
   const emit = (p: string[], o: string) => onChange(joinTeams([...teams.filter((t) => p.includes(t)), o]));
   const toggle = (t: string) => emit(picked.includes(t) ? picked.filter((x) => x !== t) : [...picked, t], other);
   return (
@@ -83,7 +86,9 @@ function TeamChips({
             : 'Zaznacz przynajmniej jedną.'
           : full
             ? `Maksymalnie ${MAX_TEAMS_PER_POST} drużyny w jednym poście.`
-            : 'Kilka grup na jednej imprezie? Zaznacz wszystkie — wyjdzie jeden post.'}
+            : calendar
+              ? 'Kilka grup razem? Zaznacz wszystkie — wydarzenie pokaże się w kalendarzu każdej z nich.'
+              : 'Kilka grup na jednej imprezie? Zaznacz wszystkie — wyjdzie jeden post.'}
       </p>
     </div>
   );
@@ -97,13 +102,16 @@ export function TeamSelect({
   allowOther = true,
   required = false,
   multi = false,
+  calendar = false,
   id = 'team',
 }: {
   value: string;
   onChange: (v: string) => void;
   teams: string[];
-  /** Turniej/sukces/ogłoszenie: kilka drużyn naraz (chipy). Mecz i kalendarz zostają przy jednej (select). */
+  /** Turniej/sukces/ogłoszenie i kalendarz: kilka drużyn naraz (chipy). Mecz (post) zostaje przy jednej (select). */
   multi?: boolean;
+  /** Kalendarz: chipy bez limitu 3 (brak planszy) i podpowiedź o wydarzeniu zamiast o poście. */
+  calendar?: boolean;
   allowAll?: boolean;
   /** Kalendarz (I3) woła z `false`: drużyna wydarzenia musi zostać z listy `TEAMS`, bo od niej zależy filtr/kolor/
    * `.ics` — wolny tekst tworzyłby drużyny, których żadna z tych rzeczy nie rozpoznaje. Formularze postów
@@ -122,7 +130,7 @@ export function TeamSelect({
   const outside = allowOther && value !== '' && !teams.includes(value);
   const [freeMode, setFreeMode] = useState(false);
   // Po hookach (reguła hooków) — `multi` jest stałe dla instancji, ale wczesny return przed useState i tak jest błędem lintera.
-  if (multi) return <TeamChips value={value} onChange={onChange} teams={teams} allowAll={allowAll} allowOther={allowOther} id={id} />;
+  if (multi) return <TeamChips value={value} onChange={onChange} teams={teams} allowAll={allowAll} allowOther={allowOther} id={id} calendar={calendar} />;
   const free = allowOther && (freeMode || outside);
   return (
     <>

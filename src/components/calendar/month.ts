@@ -17,7 +17,10 @@ export function dotsByDay(events: CalEvent[], month: string): Map<string, (strin
   for (const { date } of monthGrid(month)) {
     const from = localToIso(date, '00:00'), to = localToIso(addDays(date, 1), '00:00');
     const teams: (string | null)[] = [];
-    for (const e of events) if (e.startsAt < to && e.endsAt > from && !teams.includes(e.team)) teams.push(e.team);
+    for (const e of events) {
+      if (!(e.startsAt < to && e.endsAt > from)) continue;
+      for (const t of e.teams.length ? e.teams : [null]) if (!teams.includes(t)) teams.push(t);
+    }
     if (teams.length) m.set(date, teams);
   }
   return m;

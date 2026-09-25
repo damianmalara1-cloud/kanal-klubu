@@ -10,7 +10,7 @@ test('kalendarz: seria → odwołanie terminu + Cofnij → zmiana „ten i nast�
 
   // seria wt+czw od 29.09.2026 do 15.10.2026 → 6 terminów
   await page.goto(`${CAL}/nowy?date=2026-09-29&type=trening`);
-  await page.getByLabel('Drużyna').selectOption('młodziczki (2011+)');
+  await page.getByRole('button', { name: 'młodziczki (2011+)' }).click(); // chipy drużyn (można kilka)
   await page.getByRole('button', { name: 'Ania', exact: true }).click(); // chips trenera w formularzu
   await page.getByLabel('Co tydzień').check();
   await page.getByRole('button', { name: 'czw' }).click();
@@ -43,12 +43,17 @@ test('kalendarz: seria → odwołanie terminu + Cofnij → zmiana „ten i nast�
   await expect(page.locator('.cal-when', { hasText: '16:30–18:00' })).toHaveCount(2);
 
   // mecz → usunięcie → .ics bez meczu, z treningami
+  // mecz dwóch drużyn naraz: karta ma odznakę każdej
   await page.goto(`${CAL}/nowy?date=2026-10-10&type=mecz`);
-  await page.getByLabel('Drużyna').selectOption('młodziczki (2011+)');
+  await page.getByRole('button', { name: 'młodziczki (2011+)' }).click();
+  await page.getByRole('button', { name: 'młodzicy (2011+)' }).click();
   await page.getByLabel('Rywal', { exact: true }).fill('Sokół');
   await page.getByLabel('Początek').fill('10:00');
   await page.getByLabel('Koniec').fill('12:00');
   await page.getByRole('button', { name: 'Zapisz' }).click();
+  await expect(page.getByRole('link', { name: /vs Sokół/ }).locator('.cal-team')).toHaveText(['młodziczki (2011+)', 'młodzicy (2011+)']);
+  const two = await (await request.get(`/api/ics/${SECRET}/mlodzicy-2011.ics`)).text();
+  expect(two).toContain('SUMMARY:młodziczki (2011+) + młodzicy (2011+) · Mecz · vs Sokół');
   await page.getByRole('link', { name: /vs Sokół/ }).click();
   const url = page.url();
   await page.getByRole('button', { name: 'Usuń' }).click();

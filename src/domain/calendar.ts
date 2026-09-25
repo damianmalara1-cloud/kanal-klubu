@@ -9,13 +9,15 @@ export const CAL_TYPE_LABEL: Record<CalType, string> = { trening: 'Trening', mec
 export interface CalDetails { opponent?: string; venue?: 'dom' | 'wyjazd'; matchTime?: string; notes?: string }
 
 export interface CalEvent {
-  id: string; type: CalType; team: string | null; title: string;
+  /** Drużyny z `TEAMS`; pusta tablica = cały klub (dozwolone tylko przy `inne`). Jedno wydarzenie może dotyczyć
+   * kilku grup naraz (wspólny trening, turniej dwóch roczników) — pokazuje się w filtrze i `.ics` każdej z nich. */
+  id: string; type: CalType; teams: string[]; title: string;
   startsAt: string; endsAt: string; allDay: boolean; place: string | null; coaches: string[]; details: CalDetails;
   seriesId: string | null; createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
   deletedAt: string | null; deletedBy: string | null;
 }
 /** Pola wydarzenia, które pochodzą z formularza (bez id/autorów/dat systemowych). */
-export type CalPatchFields = Pick<CalEvent, 'type' | 'team' | 'title' | 'startsAt' | 'endsAt' | 'allDay' | 'place' | 'coaches' | 'details'>;
+export type CalPatchFields = Pick<CalEvent, 'type' | 'teams' | 'title' | 'startsAt' | 'endsAt' | 'allDay' | 'place' | 'coaches' | 'details'>;
 
 export const SERIES_MAX = 200;
 export const NOTES_MAX = 300;
@@ -23,7 +25,7 @@ export const NOTES_MAX = 300;
 /** Etykiety pól po polsku — do komunikatów walidacji (`lib/errors.ts` czyta `FIELD_LABEL` z `forms.ts`; kalendarz
  * ma własne pola, więc `actionFail` dostaje już gotowy `AppError`, patrz `parseCalInput`). */
 export const CAL_FIELD_LABEL: Record<string, string> = {
-  type: 'Typ wydarzenia', team: 'Drużyna', date: 'Data', endDate: 'Data końca', startTime: 'Początek', endTime: 'Koniec',
+  type: 'Typ wydarzenia', teams: 'Drużyna', date: 'Data', endDate: 'Data końca', startTime: 'Początek', endTime: 'Koniec',
   place: 'Miejsce', coaches: 'Trener', notes: 'Uwagi', opponent: 'Rywal', venue: 'Gdzie', matchTime: 'Godzina meczu',
   name: 'Nazwa turnieju', title: 'Tytuł', allDay: 'Cały dzień', weekdays: 'Dni tygodnia', until: 'Do',
 };
@@ -32,7 +34,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/, TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const str = z.string().trim();
 const textOpt = (max: number) => str.max(max).transform((s) => (s === '' ? null : s)).nullable().default(null);
 const base = {
-  team: str.max(40).transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null),
+  teams: z.array(str.max(40)).max(40).default([]).transform((a) => [...new Set(a.filter((t) => t !== '' && t !== 'cały klub'))]),
   date: str.regex(DATE), endDate: str.regex(DATE).nullable().default(null),
   startTime: str.regex(TIME).nullable().default(null), endTime: str.regex(TIME).nullable().default(null),
   allDay: z.coerce.boolean().default(false), place: textOpt(80),
@@ -56,13 +58,13 @@ const failFirstIssue = (error: z.ZodError): never => {
   return fail(String(i.path[0] ?? 'formularz'), i.code === 'too_big' ? `do ${String((i as { maximum?: unknown }).maximum)} znaków` : 'sprawdź wartość');
 };
 
-/** Walidacja + reguły spoza zod: drużyna z listy (wymagana poza „inne"), trenerzy z listy, koniec po początku. */
+/** Walidacja + reguły spoza zod: drużyny z listy (co najmniej jedna poza „inne"), trenerzy z listy, koniec po początku. */
 export function parseCalInput(raw: unknown, ctx: { teams: string[]; coachNames: string[] }): CalInput {
   const r = schema.safeParse(raw);
   if (!r.success) return failFirstIssue(r.error);
   const v = r.data;
-  if (v.team === null && v.type !== 'inne') fail('team', 'wybierz drużynę');
-  if (v.team !== null && !ctx.teams.includes(v.team)) fail('team', 'spoza listy');
+  if (v.teams.length === 0 && v.type !== 'inne') fail('teams', 'wybierz drużynę');
+  for (const t of v.teams) if (!ctx.teams.includes(t)) fail('teams', `„${t}" spoza listy`);
   for (const c of v.coaches) if (!ctx.coachNames.includes(c)) fail('coaches', `„${c}" spoza listy`);
   if (!v.allDay && (!v.startTime || !v.endTime)) fail('startTime', 'podaj godziny albo zaznacz „cały dzień"');
   const { startsAt, endsAt } = span(v);
@@ -89,7 +91,7 @@ export function inputToFields(v: CalInput): CalPatchFields {
   const details: CalDetails = {};
   if (v.notes) details.notes = v.notes;
   if (v.type === 'mecz') { details.opponent = v.opponent; details.venue = v.venue; if (v.matchTime) details.matchTime = v.matchTime; }
-  return { type: v.type, team: v.team, title: calTitle(v), ...span(v), allDay: v.allDay, place: v.place, coaches: v.coaches, details };
+  return { type: v.type, teams: v.teams, title: calTitle(v), ...span(v), allDay: v.allDay, place: v.place, coaches: v.coaches, details };
 }
 
 const seriesSchema = z.object({
@@ -121,9 +123,12 @@ export function fieldsForDate(v: CalInput, date: string): CalPatchFields {
   return inputToFields({ ...v, date, endDate: dayOffset ? addDays(date, dayOffset) : null } as CalInput);
 }
 
-/** `SUMMARY` w .ics i nagłówek karty: „<Grupa> · <Typ> · <tytuł>"; trening już ma „Trening · trener" w tytule. */
-export function calSummary(e: Pick<CalEvent, 'type' | 'team' | 'title' | 'coaches'>): string {
-  const team = e.team ?? 'UKS Banino';
+/** Etykieta drużyn wydarzenia: „A + B" albo `null` dla całego klubu (dziennik, panel admina). */
+export const calTeamsLabel = (teams: string[]): string | null => (teams.length ? teams.join(' + ') : null);
+
+/** `SUMMARY` w .ics i nagłówek karty: „<Grupy> · <Typ> · <tytuł>"; trening już ma „Trening · trener" w tytule. */
+export function calSummary(e: Pick<CalEvent, 'type' | 'teams' | 'title' | 'coaches'>): string {
+  const team = calTeamsLabel(e.teams) ?? 'UKS Banino';
   if (e.type === 'trening') return `${team} · ${e.title}`;
   return `${team} · ${CAL_TYPE_LABEL[e.type]} · ${e.title}`;
 }
