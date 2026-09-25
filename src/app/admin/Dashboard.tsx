@@ -7,6 +7,7 @@ import { EVENT_LABEL, eventText, fmtMonth, fmtPln, fmtTime, fmtUsd } from '@/adm
 import { usdPln } from '@/lib/nbp';
 import { nowIso } from '@/lib/dates';
 import { adminLogoutAction } from './actions';
+import { ClubMark } from '@/components/ClubMark';
 
 type SP = Record<string, string | string[] | undefined>;
 type Q = { m: string; a?: string; t?: string };
@@ -36,7 +37,7 @@ export async function Dashboard({ sp }: { sp: SP }) {
 
   return (
     <main className="wrap adm-wrap">
-      <p className="kicker">UKS Banino · Kanał Klubu</p>
+      <ClubMark />
       <div className="adm-nav">
         <h1>Panel admina</h1>
         <div className="chips">

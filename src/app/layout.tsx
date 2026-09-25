@@ -13,8 +13,13 @@ const barlow = localFont({
   variable: '--font-text-next', display: 'swap',
 });
 
-export const metadata: Metadata = { title: 'Kanał Klubu — UKS Banino', robots: { index: false, follow: false } };
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1 };
+export const metadata: Metadata = {
+  title: 'Kanał Klubu — UKS Banino',
+  robots: { index: false, follow: false },
+  // Nazwa pod ikoną na iPhonie — bez tego iOS bierze <title> strony („Kalendarz — Kanał Klubu”) i ją ucina.
+  appleWebApp: { capable: true, title: 'UKS Banino', statusBarStyle: 'default' },
+};
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, maximumScale: 1, themeColor: '#ffffff' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="pl" className={`${anton.variable} ${barlow.variable}`}><body>{children}</body></html>;

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { POST_TYPES, TYPE_LABEL, type PostStatus, type PostType } from '@/domain/types';
 import { STATUS_LABEL } from '@/lib/status';
 import { listRecentAction } from './actions';
+import { ClubMark } from '@/components/ClubMark';
 
 type Item = { id: string; title: string; type: PostType; status: PostStatus; createdAt: string };
 const KEY = 'kk-author';
@@ -51,7 +52,7 @@ export function StartClient({ secret, names }: { secret: string; names: string[]
 
   return (
     <main className="wrap">
-      <p className="kicker">UKS Banino · Kanał Klubu</p>
+      <ClubMark />
       {/* aria-label: bez niego nazwa linku sklejałaby się z podtytułem („…mecze · turnieje…") i łapała na substring „Mecz"/„Turniej" (czytniki, testy). */}
       <Link className="cal-entry" href={`/t/${secret}/kalendarz`} aria-label="Kalendarz klubu">
         <span className="cal-entry-text">

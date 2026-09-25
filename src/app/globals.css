@@ -13,6 +13,9 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .kicker { font: 600 12px/1 var(--font-text); letter-spacing: .14em; text-transform: uppercase; color: var(--text-accent); }
 /* Cele dotknięcia ≥44 px w pionie (UAT D-09): link powrotu miał 14 px wysokości i siedzi przy krawędzi ekranu. */
 .kicker a { display: inline-block; padding: 16px 0; }
+.brand-mark { display: flex; align-items: center; gap: 10px; }
+.brand-h1 { display: flex; align-items: center; gap: 12px; }
+.crest { flex: none; display: block; }
 .muted { color: var(--text-muted); }
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 20px; width: 100%; font: 700 14px/1 var(--font-text); letter-spacing: .08em; text-transform: uppercase; border: 2px solid var(--border-strong); background: var(--surface-card); color: var(--text-primary); border-radius: var(--radius-1); cursor: pointer; text-decoration: none; }
 .btn-primary { background: var(--accent); border-color: transparent; color: var(--text-on-accent); }

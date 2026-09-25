@@ -7,6 +7,7 @@ import { todayPl, weekStart } from '@/lib/dates';
 import { listWeek } from '@/workflow/calendar';
 import { TeamFilter } from '@/components/calendar/TeamFilter';
 import { WeekView } from '@/components/calendar/WeekView';
+import { Crest } from '@/components/ClubMark';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Kalendarz — Kanał Klubu', robots: { index: false, follow: false } };
 type SP = Record<string, string | string[] | undefined>;
@@ -28,7 +29,7 @@ export default async function CalendarPage({ params, searchParams }: { params: P
   return (
     <main className="wrap">
       <p className="kicker"><Link href={`/t/${secret}`}>← Kanał Klubu</Link></p>
-      <h1>Kalendarz</h1>
+      <h1 className="brand-h1"><Crest size={34} />Kalendarz</h1>
       <nav className="cal-links" aria-label="Kalendarz — widoki">
         <Link href={`/t/${secret}/kalendarz/miesiac?m=${ws.slice(0, 7)}${teamQ}`}>Miesiąc</Link>
         <Link href={`/t/${secret}/kalendarz/telefon`}>Do telefonu</Link>
