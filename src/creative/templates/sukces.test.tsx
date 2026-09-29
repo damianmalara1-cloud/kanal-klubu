@@ -145,12 +145,12 @@ describe('OgloszenieCreative', () => {
     expect(px[1]).toBeGreaterThan(px[2]);
   });
 
-  it('pas partnerów: identyczne wiersze 0–1179, różne wiersze 1230–1350', async () => {
+  // Treść ogłoszenia jest przyklejona do dołu (nie do góry — pusta połowa planszy, zgłoszenie 29.09),
+  // więc z pasem partnerów podnosi się nad strefę 1180–1350; nie da się już wymagać identycznych wierszy 0–1179.
+  it('pas partnerów: strefa 1180–1229 pusta, wiersze 1230–1350 różne', async () => {
     const off = await renderPng(<OgloszenieCreative post={oglPost} photo={null} partnerBand={false} />);
     const on = await renderPng(<OgloszenieCreative post={oglPost} photo={null} partnerBand={true} />);
-    const offTop = await sharp(off).extract({ left: 0, top: 0, width: 1080, height: 1180 }).raw().toBuffer();
-    const onTop = await sharp(on).extract({ left: 0, top: 0, width: 1080, height: 1180 }).raw().toBuffer();
-    expect(Buffer.compare(offTop, onTop)).toBe(0);
+    expect(await isAllWhite(on, { left: 0, top: 1180, width: 1080, height: 50 })).toBe(true);
     const offBand = await sharp(off).extract({ left: 0, top: 1230, width: 1080, height: 120 }).raw().toBuffer();
     const onBand = await sharp(on).extract({ left: 0, top: 1230, width: 1080, height: 120 }).raw().toBuffer();
     expect(Buffer.compare(offBand, onBand)).not.toBe(0);
@@ -158,9 +158,9 @@ describe('OgloszenieCreative', () => {
 
   it('nagłówek ma ciemne piksele (Anton)', async () => {
     const pngPhoto = await renderPng(<OgloszenieCreative post={oglPost} photo={await fakePhoto()} partnerBand={false} />);
-    expect(await hasDarkPixel(pngPhoto, { left: 65, top: 600, width: 900, height: 250 })).toBe(true);
+    expect(await hasDarkPixel(pngPhoto, { left: 65, top: 740, width: 900, height: 380 })).toBe(true);
     const pngTypo = await renderPng(<OgloszenieCreative post={oglPost} photo={null} partnerBand={false} />);
-    expect(await hasDarkPixel(pngTypo, { left: 65, top: 240, width: 900, height: 200 })).toBe(true);
+    expect(await hasDarkPixel(pngTypo, { left: 65, top: 740, width: 900, height: 380 })).toBe(true);
   });
 
   it('nagłówek 40 znaków bez spacji (post.headline ucięty przez slice) nie wjeżdża w pas partnerów', async () => {

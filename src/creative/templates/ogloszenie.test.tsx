@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
 import { renderPng } from '../render';
-import { OgloszenieCreative } from './ogloszenie';
+import { OgloszenieCreative, splitVs, subLine } from './ogloszenie';
 import { fakePhoto } from '../testUtils';
 import type { Post } from '@/domain/types';
 
@@ -44,5 +44,19 @@ describe('OgloszenieCreative', () => {
     const nabor = await renderPng(<OgloszenieCreative post={post({ title: 'Nabór' })} photo={null} partnerBand={false} />);
     const zebranie = await renderPng(<OgloszenieCreative post={post({ title: 'Zebranie rodziców' })} photo={null} partnerBand={false} />);
     expect(Buffer.compare(nabor, zebranie)).not.toBe(0);
+  });
+
+  it('tytuł „A vs B" rozbija się na gospodarza i gościa (zapowiedź meczu)', () => {
+    expect(splitVs('UKS BANINO VS SPR GDYNIA')).toEqual(['UKS BANINO', 'SPR GDYNIA']);
+    expect(splitVs('UKS Banino vs. Wybrzeże')).toEqual(['UKS Banino', 'Wybrzeże']);
+    expect(splitVs('Nabór 2026/27')).toBeNull();
+    expect(splitVs('Zawody w Ryjewie')).toBeNull();
+  });
+
+  it('linia pod nagłówkiem nie powtarza drużyny z kickera ani z tytułu', () => {
+    expect(subLine('Juniorki', 'Juniorki · dom', 'UKS Banino vs SPR Gdynia')).toBeNull();
+    expect(subLine(null, 'Ogłoszenie', 'UKS Banino vs SPR Gdynia')).toBeNull();
+    expect(subLine('Juniorki', 'Nabór', 'Treningi')).toBe('JUNIORKI');
+    expect(subLine(null, 'Nabór', 'Treningi')).toBe('UKS BANINO');
   });
 });
