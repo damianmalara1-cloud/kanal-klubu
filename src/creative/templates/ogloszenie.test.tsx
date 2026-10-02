@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
 import { renderPng } from '../render';
-import { OgloszenieCreative, splitVs, subLine } from './ogloszenie';
+import { OgloszenieCreative, fitHeadline, splitVs, subLine, wrapLines } from './ogloszenie';
 import { fakePhoto } from '../testUtils';
 import type { Post } from '@/domain/types';
 
@@ -58,5 +58,27 @@ describe('OgloszenieCreative', () => {
     expect(subLine(null, 'Ogłoszenie', 'UKS Banino vs SPR Gdynia')).toBeNull();
     expect(subLine('Juniorki', 'Nabór', 'Treningi')).toBe('JUNIORKI');
     expect(subLine(null, 'Nabór', 'Treningi')).toBe('UKS BANINO');
+  });
+
+  // Zgłoszenie 02.10 („Mała Cegielnia nowym partnerem UKS Banino", bez Kiedy/Godzina/Miejsce): nagłówek szedł
+  // 62 px z progów długości, środek planszy pusty, a ucięcie do 40 znaków zjadało „O" z „BANINO".
+  it('długi tytuł bez danych wypełnia wolne miejsce zamiast zostawać mały', () => {
+    const t = 'MAŁA CEGIELNIA NOWYM PARTNEREM UKS BANINO';
+    const { size, lineHeight } = fitHeadline(t, 1350 - 75 - 724 - 46 - 42, 190);
+    expect(size).toBeGreaterThan(100);
+    const lines = wrapLines(t, size)!;
+    expect(lines.join(' ')).toBe(t);
+    expect(lines.length * size * lineHeight).toBeLessThanOrEqual(1350 - 75 - 724 - 46 - 42);
+  });
+
+  it('każde słowo mieści się w szerokości (bez łamania w środku wyrazu)', () => {
+    const { size } = fitHeadline('KONSTANTYNOPOLITAŃCZYKOWIANECZKA', 600, 240);
+    expect(wrapLines('KONSTANTYNOPOLITAŃCZYKOWIANECZKA', size)).not.toBeNull();
+  });
+
+  it('tytuł 41+ znaków nie jest ucinany na planszy', async () => {
+    const a = await renderPng(<OgloszenieCreative post={post({ title: 'Mała Cegielnia nowym partnerem UKS Banino' })} photo={null} partnerBand={false} />);
+    const b = await renderPng(<OgloszenieCreative post={post({ title: 'Mała Cegielnia nowym partnerem UKS Banin' })} photo={null} partnerBand={false} />);
+    expect(Buffer.compare(a, b)).not.toBe(0);
   });
 });

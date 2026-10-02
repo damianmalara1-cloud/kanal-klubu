@@ -75,7 +75,7 @@ const sukces = z.object({
 const optMax = (max: number) => str.max(max).transform((s) => (s === '' || s === 'cały klub' ? null : s)).nullable().default(null);
 
 const ogloszenie = z.object({
-  // max 60: nagłówek na planszy i tak ucina się do 40 znaków (patrz ogloszenie.tsx) — 60 to margines dla treści caption/AI
+  // max 60: cały tytuł trafia na planszę — rozmiar nagłówka dopasowuje się do wolnego miejsca (fitHeadline w ogloszenie.tsx)
   title: str.min(1).max(60),
   // max 600: treść ogłoszenia idzie do podpisu posta, nie na samą planszę
   body: str.min(1).max(600),
