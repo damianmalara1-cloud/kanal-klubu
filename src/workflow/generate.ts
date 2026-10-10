@@ -6,7 +6,7 @@ import { generateCaption, type Generated } from '@/ai/generate';
 import { AiMeter } from '@/ai/meter';
 import { renderCreative } from '@/creative';
 import { MSG_POST_DONE, MSG_POST_NOT_FOUND } from '@/domain/messages';
-import type { Post } from '@/domain/types';
+import { PHOTO_STYLES, type PhotoStyle, type Post } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
 
@@ -19,8 +19,8 @@ async function postOr404(id: string): Promise<Post> {
   return post;
 }
 
-/** Renderuje planszę dla aktualnego stanu posta i zapisuje ją do storage. Wydzielone z `generate` dla
- * czytelności — jedynym wywołującym jest `generate` (żaden przepływ nie renderuje planszy bez modelu). */
+/** Renderuje planszę dla aktualnego stanu posta i zapisuje ją do storage. Wołają ją `generate` (po modelu)
+ * i `setPhotoStyle` (zmiana wyglądu zdjęcia — bez modelu, bez kosztu, nie liczy się do limitu prób). */
 async function rerenderCreative(id: string): Promise<Post> {
   const c = getConfig();
   const repo = getRepo();
@@ -89,5 +89,15 @@ export async function generate(id: string, note?: string): Promise<Post> {
     meta: { regen: isRegen, regenNo: isRegen ? regenCount : 0, ...counts, ms: Date.now() - t0, model, factWarning: gen.factWarning !== null },
     content: { note: note ?? null, caption: gen.caption, headline: gen.headline, kicker: gen.kicker },
   });
+  return rerenderCreative(id);
+}
+
+/** Przełącza wygląd zdjęcia na planszy (klubowy duotone ↔ oryginalne kolory) i przerysowuje planszę.
+ * Tekst posta zostaje nietknięty — to czysto wizualna zmiana, więc nie woła modelu i nie zjada `MAX_REGEN`. */
+export async function setPhotoStyle(id: string, style: PhotoStyle): Promise<Post> {
+  if (!PHOTO_STYLES.includes(style)) throw new AppError('Nieznany styl zdjęcia', 400);
+  const post = await postOr404(id);
+  if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
+  if (post.photoStyle !== style) await getRepo().update(id, { photoStyle: style });
   return rerenderCreative(id);
 }

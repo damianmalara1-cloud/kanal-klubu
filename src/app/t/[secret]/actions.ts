@@ -4,11 +4,11 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { SIGNED_URL_TTL_S } from '@/storage/types';
 import { postTitle } from '@/domain/forms';
-import type { PostStatus, PostType } from '@/domain/types';
+import type { PhotoStyle, Post, PostStatus, PostType } from '@/domain/types';
 import { clientIp, isValidSecret } from '@/lib/access';
 import { actionFail } from '@/lib/errors';
 import { createDraft, setHeroPhoto } from '@/workflow/draft';
-import { generate, MAX_REGEN } from '@/workflow/generate';
+import { generate, MAX_REGEN, setPhotoStyle } from '@/workflow/generate';
 import { finish } from '@/workflow/finish';
 
 type Err = { error: string };
@@ -34,16 +34,37 @@ export async function setHeroAction(secret: string, id: string, path: string): P
   }
 }
 
-export async function generateAction(
-  secret: string,
-  id: string,
-  note?: string,
-): Promise<{ caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean } | Err> {
+/** Adres planszy z wersją z `updatedAt` — plansza leży zawsze pod tą samą ścieżką (`creative.png`), więc bez
+ * tego przeglądarka po przełączeniu stylu zdjęcia pokazywałaby starą wersję z cache. */
+async function creativeUrlOf(p: Post): Promise<string> {
+  if (!p.creativePath) return '';
+  const url = await getStorage().signedUrl(p.creativePath, SIGNED_URL_TTL_S);
+  return `${url}${url.includes('?') ? '&' : '?'}v=${Date.parse(p.updatedAt)}`;
+}
+
+type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle };
+
+async function generatedOut(p: Post): Promise<GeneratedOut> {
+  return {
+    caption: p.caption ?? '', creativeUrl: await creativeUrlOf(p), factWarning: p.factWarning,
+    regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle,
+  };
+}
+
+export async function generateAction(secret: string, id: string, note?: string): Promise<GeneratedOut | Err> {
   if (!isValidSecret(secret)) return BAD;
   try {
-    const p = await generate(id, note);
-    const creativeUrl = p.creativePath ? await getStorage().signedUrl(p.creativePath, SIGNED_URL_TTL_S) : '';
-    return { caption: p.caption ?? '', creativeUrl, factWarning: p.factWarning, regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN };
+    return await generatedOut(await generate(id, note));
+  } catch (e) {
+    return actionFail(e);
+  }
+}
+
+export async function setPhotoStyleAction(secret: string, id: string, style: PhotoStyle): Promise<{ creativeUrl: string; photoStyle: PhotoStyle } | Err> {
+  if (!isValidSecret(secret)) return BAD;
+  try {
+    const p = await setPhotoStyle(id, style);
+    return { creativeUrl: await creativeUrlOf(p), photoStyle: p.photoStyle };
   } catch (e) {
     return actionFail(e);
   }

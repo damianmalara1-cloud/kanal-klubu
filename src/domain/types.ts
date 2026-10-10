@@ -1,5 +1,8 @@
 export type PostType = 'mecz' | 'turniej' | 'sukces' | 'ogloszenie';
 export type PostStatus = 'draft' | 'done';
+/** Jak zdjęcie wchodzi na planszę: `klub` = duotone czerń→czerwień, `oryginal` = kolory z aparatu. */
+export type PhotoStyle = 'klub' | 'oryginal';
+export const PHOTO_STYLES: PhotoStyle[] = ['klub', 'oryginal'];
 export const POST_TYPES: PostType[] = ['mecz', 'turniej', 'sukces', 'ogloszenie'];
 export const TYPE_LABEL: Record<PostType, string> = { mecz: 'Mecz', turniej: 'Turniej', sukces: 'Sukces', ogloszenie: 'Ogłoszenie' };
 
@@ -13,7 +16,7 @@ export type PostForm = MeczForm | TurniejForm | SukcesForm | OgloszenieForm;
 export interface Post {
   id: string; createdAt: string; updatedAt: string;
   author: string; type: PostType; form: PostForm;
-  photos: string[]; heroPhoto: string | null;
+  photos: string[]; heroPhoto: string | null; photoStyle: PhotoStyle;
   captionAi: string | null; caption: string | null; headline: string | null; kicker: string | null;
   creativePath: string | null; regenCount: number; factWarning: string | null;
   partnerInfo: boolean; status: PostStatus;

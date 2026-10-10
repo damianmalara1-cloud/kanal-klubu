@@ -1,6 +1,6 @@
 import type { Post } from '@/domain/types';
 import { log } from '@/lib/log';
-import { duotone } from './duotone';
+import { duotone, originalPhoto } from './duotone';
 import { renderPng } from './render';
 import { MeczCreative } from './templates/mecz';
 import { TurniejCreative } from './templates/turniej';
@@ -11,7 +11,7 @@ import type { CreativeProps } from './types';
 const TEMPLATES = { mecz: MeczCreative, turniej: TurniejCreative, sukces: SukcesCreative, ogloszenie: OgloszenieCreative } as const;
 
 /**
- * Punkt wejścia renderowania kreacji: duotone zdjęcia bohatera (jeśli jest), wybór szablonu po
+ * Punkt wejścia renderowania kreacji: duotone zdjęcia bohatera (albo oryginał, gdy `photoStyle === 'oryginal'`), wybór szablonu po
  * `post.type`, PNG 1080×1350. Gdy duotone albo render ze zdjęciem rzuci (np. zepsuty bufor zdjęcia),
  * pada z powrotem na wariant typograficzny zamiast wywalać cały request — publikacja posta nie może
  * się zablokować przez jedno wadliwe zdjęcie.
@@ -21,7 +21,7 @@ export async function renderCreative(post: Post, heroPhoto: Buffer | null, opts:
   let photo: string | null = null;
   if (heroPhoto) {
     try {
-      photo = 'data:image/jpeg;base64,' + (await duotone(heroPhoto)).toString('base64');
+      photo = 'data:image/jpeg;base64,' + (await (post.photoStyle === 'oryginal' ? originalPhoto(heroPhoto) : duotone(heroPhoto))).toString('base64');
     } catch (e) {
       log.warn('duotone nieudany — wariant typograficzny', { post: post.id, err: String(e) });
     }

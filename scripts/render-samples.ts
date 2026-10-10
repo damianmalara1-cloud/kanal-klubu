@@ -10,6 +10,7 @@ const base: Omit<Post, 'type' | 'form' | 'headline' | 'kicker'> = {
   author: 'Ania',
   photos: [],
   heroPhoto: null,
+  photoStyle: 'klub',
   captionAi: null,
   caption: null,
   creativePath: null,

@@ -29,3 +29,12 @@ export async function duotone(input: Buffer, opts: DuotoneOpts = {}): Promise<Bu
   }
   return sharp(out, { raw: { width: info.width, height: info.height, channels: 3 } }).jpeg({ quality: 88 }).toBuffer();
 }
+
+/** Zdjęcie w oryginalnych kolorach — tylko orientacja EXIF i zmniejszenie do maxSide px, JPEG. */
+export async function originalPhoto(input: Buffer, maxSide = 1400): Promise<Buffer> {
+  return sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .resize({ width: maxSide, height: maxSide, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 88 })
+    .toBuffer();
+}

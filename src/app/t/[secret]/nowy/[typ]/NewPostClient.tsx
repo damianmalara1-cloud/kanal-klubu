@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isDraftGoneMessage } from '@/domain/messages';
-import { TYPE_LABEL, type PostType } from '@/domain/types';
+import { TYPE_LABEL, type PhotoStyle, type PostType } from '@/domain/types';
 import { PhotoPicker, type PickedPhoto } from '@/components/PhotoPicker';
 import { MeczFields } from '@/components/forms/MeczFields';
 import { TurniejFields } from '@/components/forms/TurniejFields';
 import { SukcesFields } from '@/components/forms/SukcesFields';
 import { OgloszenieFields } from '@/components/forms/OgloszenieFields';
-import { createDraftAction, finishAction, generateAction, setHeroAction } from '../../actions';
+import { createDraftAction, finishAction, generateAction, setHeroAction, setPhotoStyleAction } from '../../actions';
 import { Preview, type Generated } from './Preview';
 import { toForm } from './toForm';
 
@@ -181,6 +181,18 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
       handleError(err, 'preview');
     }
   }
+  /** Przełączenie stylu zdjęcia zostaje na ekranie podglądu — tekst trenera (stan `caption`) nie jest ruszany. */
+  async function onPhotoStyle(style: PhotoStyle) {
+    if (!id || !gen) return;
+    setError(null);
+    try {
+      const r = await setPhotoStyleAction(secret, id, style);
+      if ('error' in r) throw new Error(r.error);
+      setGen({ ...gen, creativeUrl: r.creativeUrl, photoStyle: r.photoStyle });
+    } catch (err) {
+      handleError(err, 'preview');
+    }
+  }
   async function onFinish(caption: string) {
     if (!id) return;
     setError(null);
@@ -215,7 +227,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
             {error}
           </div>
         )}
-        <Preview gen={gen} caption={caption} onCaptionChange={setCaption} onRegenerate={onRegenerate} onFinish={onFinish} onBack={() => setStage('form')} />
+        <Preview gen={gen} caption={caption} onCaptionChange={setCaption} onRegenerate={onRegenerate} onPhotoStyle={onPhotoStyle} onFinish={onFinish} onBack={() => setStage('form')} />
       </main>
     );
   return (

@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { MIN_CAPTION } from '@/domain/limits';
-export type Generated = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean };
+import type { PhotoStyle } from '@/domain/types';
+export type Generated = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle };
 
 /** Tekst posta (`caption`) NIE jest stanem tego komponentu — trzyma go `NewPostClient`, bo „Popraw dane"
  * odmontowuje cały podgląd, a ręczna poprawka trenera musi przeżyć powrót do formularza (UAT D-03). */
@@ -10,6 +11,7 @@ export function Preview({
   caption,
   onCaptionChange,
   onRegenerate,
+  onPhotoStyle,
   onFinish,
   onBack,
 }: {
@@ -17,15 +19,37 @@ export function Preview({
   caption: string;
   onCaptionChange: (v: string) => void;
   onRegenerate: (note: string) => void;
+  onPhotoStyle: (style: PhotoStyle) => Promise<void>;
   onFinish: (caption: string) => Promise<void>;
   onBack: () => void;
 }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [styleBusy, setStyleBusy] = useState(false);
   return (
     <div className="stack">
       {gen.factWarning && <div className="warn" role="status">Sprawdź, czy dane w tekście się zgadzają: {gen.factWarning}</div>}
       {gen.creativeUrl && <img className="creative" src={gen.creativeUrl} alt="Plansza" width={1080} height={1350} />}
+      {gen.hasPhoto && (
+        <div className="field">
+          <label id="photo-style-label">Zdjęcie na planszy</label>
+          <div className="chips" role="group" aria-labelledby="photo-style-label">
+            {([['klub', 'Klubowe (czerwone)'], ['oryginal', 'Oryginalne kolory']] as const).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                className="chip"
+                aria-pressed={gen.photoStyle === v}
+                disabled={styleBusy}
+                onClick={async () => { if (gen.photoStyle === v) return; setStyleBusy(true); try { await onPhotoStyle(v); } finally { setStyleBusy(false); } }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {styleBusy && <p className="muted" role="status" style={{ fontSize: 13, margin: 0 }}>Przerysowuję planszę…</p>}
+        </div>
+      )}
       <div className="field"><label htmlFor="caption">Tekst posta</label><textarea id="caption" aria-label="Tekst posta" value={caption} onChange={(e) => onCaptionChange(e.target.value)} style={{ minHeight: 260 }} /></div>
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>Hashtagi i informację o programie dokładamy automatycznie na następnym ekranie.</p>
       <button className="btn btn-primary" type="button" disabled={busy || caption.trim().length < MIN_CAPTION} onClick={async () => { setBusy(true); try { await onFinish(caption); } finally { setBusy(false); } }}>Gotowe</button>

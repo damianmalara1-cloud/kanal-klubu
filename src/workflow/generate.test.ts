@@ -17,7 +17,7 @@ import { getEvents } from '@/events';
 import { isDraftGoneMessage } from '@/domain/messages';
 import { renderCreative } from '@/creative';
 import { createDraft } from './draft';
-import { generate, MAX_REGEN } from './generate';
+import { generate, MAX_REGEN, setPhotoStyle } from './generate';
 
 beforeEach(() => {
   resetAdapters();
@@ -134,5 +134,30 @@ describe('dziennik zdarzeń — generacja', () => {
     for (let i = 0; i < MAX_REGEN; i++) await generate(d.id, 'x');
     await expect(generate(d.id, 'x')).rejects.toMatchObject({ status: 429 });
     expect((await allEvents()).find((e) => e.type === 'limit_hit')).toMatchObject({ author: 'Ania', postId: d.id, meta: { limit: 'max_regen' } });
+  });
+});
+
+describe('setPhotoStyle', () => {
+  it('przełącza na oryginał i przerysowuje planszę bez modelu — tekst i licznik prób bez zmian', async () => {
+    const d = await draft();
+    const g = await generate(d.id);
+    expect(g.photoStyle).toBe('klub');
+    vi.mocked(renderCreative).mockClear();
+    const p = await setPhotoStyle(d.id, 'oryginal');
+    expect(p.photoStyle).toBe('oryginal');
+    expect(p.caption).toBe(g.caption);
+    expect(p.regenCount).toBe(0);
+    expect(renderCreative).toHaveBeenCalledTimes(1);
+    expect(renderCreative).toHaveBeenCalledWith(expect.objectContaining({ photoStyle: 'oryginal' }), null, { partnerBand: false });
+    expect((await allEvents()).filter((e) => e.type === 'ai_generated')).toHaveLength(1); // przełączenie nie woła modelu
+  });
+
+  it('odrzuca nieznany styl i post po „Gotowe"', async () => {
+    const d = await draft();
+    await generate(d.id);
+    // @ts-expect-error — wartość spoza unii przychodzi z klienta jako zwykły string
+    await expect(setPhotoStyle(d.id, 'sepia')).rejects.toMatchObject({ status: 400 });
+    await getRepo().update(d.id, { status: 'done' });
+    await expect(setPhotoStyle(d.id, 'oryginal')).rejects.toMatchObject({ status: 409 });
   });
 });
