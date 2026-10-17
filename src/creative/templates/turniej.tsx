@@ -2,6 +2,7 @@ import type { TurniejForm } from '@/domain/types';
 import { splitTeams, teamLabel } from '@/domain/teams';
 import type { CreativeProps } from '../types';
 import { BarRow, Canvas, DataCell, Kicker, Logo, M, PartnerBand, PhotoTop, FONT_DISPLAY, upperPl } from '../parts';
+import { photoHeight } from '../geometry';
 
 /**
  * Rozmiar i wielkość liter wielkiego wyniku/miejsca — zależne od długości tekstu (ustalenie po review
@@ -25,7 +26,7 @@ export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
   const top = photo ? 660 : 420;
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={600} crop={post.photoCrop} />}
+      {photo && <PhotoTop src={photo} height={photoHeight('turniej', partnerBand)} crop={post.photoCrop} />}
       <Logo white={!!photo} />
       <div style={{ position: 'absolute', left: M, top, width: 950, display: 'flex', flexDirection: 'column' }}>
         <Kicker>{kicker}</Kicker>

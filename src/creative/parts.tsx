@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { DEFAULT_CROP, type PhotoCrop } from '@/domain/types';
 import { assetDataUri } from './assets';
+import { SLANT_DEG } from './geometry';
 
 export const M = 65;
-export const SLANT_DEG = 10; // token DS --angle-slant — jeden kąt w całym systemie
-export const SLANT_DROP = Math.round(1080 * Math.tan((SLANT_DEG * Math.PI) / 180)); // 190 px spadku linii cięcia na szerokości planszy
+export { SLANT_DEG, SLANT_DROP } from './geometry';
 export const INK = '#0D0D0D', RED = '#C12E26', RED_TEXT = '#A32219', MUTED = '#8A8A8A', WHITE = '#FFFFFF';
 export const FONT_DISPLAY = 'Anton', FONT_TEXT = 'Barlow';
 export const upperPl = (s: string) => s.toLocaleUpperCase('pl-PL');

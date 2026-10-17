@@ -1,6 +1,7 @@
 import type { SukcesForm } from '@/domain/types';
 import type { CreativeProps } from '../types';
 import { BarRow, Canvas, Kicker, Logo, M, MUTED, PartnerBand, PhotoTop, FONT_DISPLAY, upperPl } from '../parts';
+import { photoHeight } from '../geometry';
 
 const KIND_LABEL: Record<SukcesForm['kind'], string> = {
   kadra: 'Powołanie do kadry',
@@ -66,7 +67,7 @@ export function SukcesCreative({ post, photo, partnerBand }: CreativeProps) {
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={770} crop={post.photoCrop} />
+        <PhotoTop src={photo} height={photoHeight('sukces', partnerBand)} crop={post.photoCrop} />
         <Logo white />
         <div style={{ position: 'absolute', left: M, top: 830, width: 950, display: 'flex', flexDirection: 'column' }}>
           <Kicker>{kicker}</Kicker>

@@ -200,7 +200,8 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
     try {
       const r = await setPhotoCropAction(secret, id, crop);
       if ('error' in r) throw new Error(r.error);
-      setGen({ ...gen, creativeUrl: r.creativeUrl, photoCrop: r.photoCrop });
+      // funkcyjnie: podgląd woła to kilka razy z rzędu (seria kliknięć), domknięty `gen` byłby już nieaktualny
+      setGen((g) => g && { ...g, creativeUrl: r.creativeUrl, photoCrop: r.photoCrop });
     } catch (err) {
       handleError(err, 'preview');
     }
@@ -239,7 +240,7 @@ export function NewPostClient({ secret, type, teams }: { secret: string; type: P
             {error}
           </div>
         )}
-        <Preview gen={gen} caption={caption} onCaptionChange={setCaption} onRegenerate={onRegenerate} onPhotoStyle={onPhotoStyle} onPhotoCrop={onPhotoCrop} onFinish={onFinish} onBack={() => setStage('form')} />
+        <Preview gen={gen} heroSrc={photos[hero]?.preview ? photos[hero].url : null} caption={caption} onCaptionChange={setCaption} onRegenerate={onRegenerate} onPhotoStyle={onPhotoStyle} onPhotoCrop={onPhotoCrop} onFinish={onFinish} onBack={() => setStage('form')} />
       </main>
     );
   return (

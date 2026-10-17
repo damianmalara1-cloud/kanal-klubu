@@ -1,6 +1,7 @@
 import type { OgloszenieForm } from '@/domain/types';
 import type { CreativeProps } from '../types';
 import { BarRow, Canvas, DataCell, Kicker, Logo, M, PartnerBand, PhotoTop, RED, RedBar, FONT_DISPLAY, upperPl } from '../parts';
+import { photoHeight } from '../geometry';
 
 // Kiedy/Godzina/Miejsce muszą zmieścić się w JEDNYM wierszu (max 3 komórki) — trzy równe kolumny z
 // dwiema przerwami 26px: (950 − 2×26) / 3 ≈ 299px. Przy szerokości 462px (stara wartość) trzecia
@@ -112,9 +113,9 @@ export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) 
   if (f.time) cells.push(['Godzina', f.time]);
   if (f.place) cells.push(['Miejsce', f.place]);
   // Zdjęcie jak w szablonie meczu (700); z pasem partnerów niżej, żeby treść nie weszła na zdjęcie.
-  const photoHeight = partnerBand ? 600 : 700;
+  const photoH = photoHeight('ogloszenie', partnerBand);
   // Lewy brzeg zdjęcia sięga pełnego photoHeight (klin opada w lewo), więc treść zaczyna się pod nim.
-  const top = photo ? photoHeight + 24 : 230;
+  const top = photo ? photoH + 24 : 230;
   const bottom = bottomLimit(partnerBand);
   const vs = splitVs(headlineText);
   // Wysokość elementów pod/nad nagłówkiem — reszta wolnego miejsca idzie na sam tytuł.
@@ -125,7 +126,7 @@ export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) 
   const { size, lineHeight } = fitHeadline(headlineText, bottom - top - kickerH - barH - cellsH, photo ? 190 : 240, vs);
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={photoHeight} crop={post.photoCrop} />}
+      {photo && <PhotoTop src={photo} height={photoH} crop={post.photoCrop} />}
       <Logo white={!!photo} />
       {!photo && (
         <Kicker style={{ position: 'absolute', left: 500, top: 64, width: 515, justifyContent: 'flex-end', lineHeight: 1 }}>

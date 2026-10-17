@@ -1,6 +1,7 @@
 import type { MeczForm } from '@/domain/types';
 import type { CreativeProps } from '../types';
 import { Canvas, Kicker, Logo, M, MUTED, PartnerBand, PhotoTop, RED, FONT_DISPLAY, INK, WHITE } from '../parts';
+import { photoHeight, venueLabel } from '../geometry';
 
 function Score({ home, away, size }: { home: number; away: number; size: number }) {
   return (
@@ -61,12 +62,12 @@ function VenueLabel({ children, white }: { children: string; white?: boolean }) 
 export function MeczCreative({ post, photo, partnerBand }: CreativeProps) {
   const f = post.form as MeczForm;
   const kicker = post.kicker || `Wynik meczu${f.team ? ` · ${f.team}` : ''}`;
-  const where = f.venue === 'dom' ? 'Banino' : `wyjazd${f.venueCity ? ` · ${f.venueCity}` : ''}`;
+  const where = venueLabel(post) ?? '';
   const teamSize = teamFontSize('UKS Banino', f.opponent);
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={700} crop={post.photoCrop} />
+        <PhotoTop src={photo} height={photoHeight('mecz', partnerBand)} crop={post.photoCrop} />
         <Logo white />
         <VenueLabel white>{where}</VenueLabel>
         <div style={{ position: 'absolute', left: M, top: 770, width: 950, display: 'flex', flexDirection: 'column' }}>

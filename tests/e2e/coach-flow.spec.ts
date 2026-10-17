@@ -179,3 +179,32 @@ test('admin: złe hasło, logowanie, trener w tabeli, historia posta z porównan
   await page.getByRole('button', { name: 'Wyloguj' }).click();
   await expect(page.getByLabel('Hasło')).toBeVisible();
 });
+
+test('kadr zdjęcia: podgląd zmienia się od razu, plansza z serwera dojeżdża w tle', async ({ page }) => {
+  await page.goto(`/t/${SECRET}`);
+  await page.getByRole('button', { name: 'Ania' }).click();
+  await page.getByRole('link', { name: 'Mecz' }).click();
+  await page.getByLabel('Drużyna').selectOption('młodziczki (2011+)');
+  await page.getByLabel('Rywal', { exact: true }).fill('Kadr Test');
+  await page.getByLabel('Bramki UKS Banino').fill('20');
+  await page.getByLabel('Bramki rywala').fill('20');
+  await page.getByLabel('Dodaj zdjęcia').setInputFiles(['tests/e2e/fixtures/foto.jpg']);
+  await page.getByRole('button', { name: 'Wygeneruj post' }).click();
+  await expectPlanszaLoaded(page);
+  const live = page.getByTestId('kadr-na-zywo');
+  await expect(live).toBeHidden(); // plansza z serwera pokazuje bieżący kadr — nakładka niepotrzebna
+  const before = await page.getByRole('img', { name: 'Plansza' }).getAttribute('src');
+  await page.getByRole('button', { name: 'Przybliż zdjęcie' }).click();
+  await expect(live).toBeVisible({ timeout: 300 }); // natychmiast, bez czekania na serwer
+  if (process.env.KADR_SHOTS) await page.getByRole('img', { name: 'Plansza' }).locator('..').screenshot({ path: `${process.env.KADR_SHOTS}/1-po-kliku.png` });
+  await page.getByRole('button', { name: 'Pokaż wyższą część zdjęcia' }).click();
+  await expect(page.getByText('Kadr zdjęcia · przybliżenie 125%')).toBeVisible();
+  // po ciszy kadr idzie na serwer, nowa plansza się wczytuje i nakładka znika
+  await expect(live).toBeHidden({ timeout: 30_000 });
+  expect(await page.getByRole('img', { name: 'Plansza' }).getAttribute('src')).not.toBe(before);
+  if (process.env.KADR_SHOTS) await page.getByRole('img', { name: 'Plansza' }).locator('..').screenshot({ path: `${process.env.KADR_SHOTS}/2-plansza-z-serwera.png` });
+  // „Gotowe" tuż po kliknięciu (przed upływem ciszy) i tak zapisuje kadr przed zamknięciem posta
+  await page.getByRole('button', { name: 'Oddal zdjęcie' }).click();
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+  await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
+});

@@ -1,5 +1,7 @@
 'use server';
 import { headers } from 'next/headers';
+import { getConfig } from '@/config';
+import { photoHeight, venueLabel } from '@/creative/geometry';
 import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { SIGNED_URL_TTL_S } from '@/storage/types';
@@ -42,12 +44,14 @@ async function creativeUrlOf(p: Post): Promise<string> {
   return `${url}${url.includes('?') ? '&' : '?'}v=${Date.parse(p.updatedAt)}`;
 }
 
-type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle; photoCrop: PhotoCrop };
+type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle; photoCrop: PhotoCrop; photoHeight: number; photoLabel: string | null };
 
 async function generatedOut(p: Post): Promise<GeneratedOut> {
   return {
     caption: p.caption ?? '', creativeUrl: await creativeUrlOf(p), factWarning: p.factWarning,
     regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle, photoCrop: p.photoCrop ?? DEFAULT_CROP,
+    // wysokość pola zdjęcia — przeglądarka odtwarza z nią kadr na żywo, zanim serwer przerysuje planszę
+    photoHeight: photoHeight(p.type, getConfig().partnerInfoEnabled && p.partnerInfo), photoLabel: venueLabel(p),
   };
 }
 
