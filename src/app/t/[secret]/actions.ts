@@ -6,7 +6,7 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { SIGNED_URL_TTL_S } from '@/storage/types';
 import { postTitle } from '@/domain/forms';
-import { DEFAULT_CROP, type PhotoCrop, type PhotoStyle, type Post, type PostStatus, type PostType } from '@/domain/types';
+import { normalizeCrop, type PhotoCrop, type PhotoStyle, type Post, type PostStatus, type PostType } from '@/domain/types';
 import { clientIp, isValidSecret } from '@/lib/access';
 import { actionFail } from '@/lib/errors';
 import { createDraft, setHeroPhoto } from '@/workflow/draft';
@@ -49,7 +49,7 @@ type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string 
 async function generatedOut(p: Post): Promise<GeneratedOut> {
   return {
     caption: p.caption ?? '', creativeUrl: await creativeUrlOf(p), factWarning: p.factWarning,
-    regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle, photoCrop: p.photoCrop ?? DEFAULT_CROP,
+    regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle, photoCrop: normalizeCrop(p.photoCrop),
     // wysokość pola zdjęcia — przeglądarka odtwarza z nią kadr na żywo, zanim serwer przerysuje planszę
     photoHeight: photoHeight(p.type, getConfig().partnerInfoEnabled && p.partnerInfo), photoLabel: venueLabel(p),
   };
@@ -78,7 +78,7 @@ export async function setPhotoCropAction(secret: string, id: string, crop: Photo
   if (!isValidSecret(secret)) return BAD;
   try {
     const p = await setPhotoCrop(id, crop);
-    return { creativeUrl: await creativeUrlOf(p), photoCrop: p.photoCrop };
+    return { creativeUrl: await creativeUrlOf(p), photoCrop: normalizeCrop(p.photoCrop) };
   } catch (e) {
     return actionFail(e);
   }

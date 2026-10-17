@@ -15,13 +15,14 @@ export function photoHeight(type: PostType, partnerBand: boolean): number {
   }
 }
 
-/** Prostokąt zdjęcia w polu 1080×`height` dla danego kadru (px planszy, może wychodzić poza pole — przycina je
- * `overflow`). Ta sama arytmetyka co `objectFit: cover` + `objectPosition` w `PhotoTop`, policzona wprost,
- * żeby przeglądarka mogła ją odtworzyć bez satori. `natW`/`natH` = wymiary zdjęcia po obróceniu EXIF. */
+/** Prostokąt zdjęcia w polu 1080×`height` dla danego kadru (px planszy; może wychodzić poza pole — przycina je
+ * `overflow`, a odsłonięte miejsce wypełnia tło). Bazą jest dopasowanie „cover" wyśrodkowane w polu; `zoom` skaluje
+ * wokół środka, `dx`/`dy` przesuwają. Jedno źródło dla renderu (`PhotoTop`) i podglądu na żywo w przeglądarce.
+ * `natW`/`natH` = wymiary zdjęcia po obróceniu EXIF (liczy się tylko proporcja). */
 export function photoRect(natW: number, natH: number, height: number, crop: PhotoCrop) {
   const scale = Math.max(1080 / natW, height / natH) * (crop.zoom / 100);
   const w = natW * scale, h = natH * scale;
-  return { left: ((1080 - w) * crop.x) / 100, top: ((height - h) * crop.y) / 100, width: w, height: h };
+  return { left: (1080 - w) / 2 + crop.dx, top: (height - h) / 2 + crop.dy, width: w, height: h };
 }
 
 /** Napis w prawym górnym rogu planszy meczu (leży NA zdjęciu, więc podgląd kadru na żywo musi go odtworzyć). */

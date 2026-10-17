@@ -3,11 +3,19 @@ export type PostStatus = 'draft' | 'done';
 /** Jak zdjęcie wchodzi na planszę: `klub` = duotone czerń→czerwień, `oryginal` = kolory z aparatu. */
 export type PhotoStyle = 'klub' | 'oryginal';
 export const PHOTO_STYLES: PhotoStyle[] = ['klub', 'oryginal'];
-/** Kadr zdjęcia na planszy: `x`/`y` = punkt zaczepienia w % (jak CSS `object-position`: 0 = lewa/górna krawędź
- * zdjęcia, 100 = prawa/dolna), `zoom` = przybliżenie w % ponad dopasowanie `cover` (100 = całe pole, bez przybliżenia). */
-export interface PhotoCrop { x: number; y: number; zoom: number }
-export const DEFAULT_CROP: PhotoCrop = { x: 50, y: 50, zoom: 100 };
-export const CROP_ZOOM_MAX = 250;
+/** Kadr zdjęcia na planszy (jak w generatorze grafik KPR): `zoom` = wielkość w % względem dopasowania, przy którym
+ * zdjęcie dokładnie wypełnia pole (100), `dx`/`dy` = przesunięcie środka zdjęcia w px planszy 1080×1350 (+ w prawo / w dół).
+ * Bez ograniczeń do krawędzi zdjęcia — odsłonięte pole wypełnia ciemne tło, więc każdy ruch suwaka jest widoczny. */
+export interface PhotoCrop { dx: number; dy: number; zoom: number }
+export const DEFAULT_CROP: PhotoCrop = { dx: 0, dy: 0, zoom: 100 };
+export const CROP_ZOOM_MIN = 20, CROP_ZOOM_MAX = 300, CROP_OFFSET_MAX = 800;
+/** Kadr z bazy/klienta do bezpiecznej postaci: null albo stary format `{x, y, zoom}` (migracja 0007, sprzed suwaków)
+ * → domyślny. Rendery nie mogą się wywalić na wierszu, który przyszedł przed migracją 0008. */
+export function normalizeCrop(c: unknown): PhotoCrop {
+  const o = c as Partial<PhotoCrop> | null;
+  if (!o || typeof o.dx !== 'number' || typeof o.dy !== 'number' || typeof o.zoom !== 'number') return { ...DEFAULT_CROP };
+  return { dx: o.dx, dy: o.dy, zoom: o.zoom };
+}
 export const POST_TYPES: PostType[] = ['mecz', 'turniej', 'sukces', 'ogloszenie'];
 export const TYPE_LABEL: Record<PostType, string> = { mecz: 'Mecz', turniej: 'Turniej', sukces: 'Sukces', ogloszenie: 'Ogłoszenie' };
 

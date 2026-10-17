@@ -89,24 +89,26 @@ describe('PhotoTop — kadr', () => {
   const isRed = ([r, , b]: number[]) => r > 150 && b < 100;
   const isBlue = ([r, , b]: number[]) => b > 150 && r < 100;
 
-  it('y=0 pokazuje górę pionowego zdjęcia, y=100 dół, brak kadru = środek', async () => {
-    const src = await split(900, 1200, true); // cover w 1080×700 → 1080×1440, nadmiar 740 px w pionie
-    const top = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 50, y: 0, zoom: 100 }} /></Canvas>);
-    const bottom = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 50, y: 100, zoom: 100 }} /></Canvas>);
-    expect(isRed(await pixel(top, 540, 400))).toBe(true);
-    expect(isBlue(await pixel(bottom, 540, 400))).toBe(true);
-    const legacy = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={null} /></Canvas>);
-    expect(isRed(await pixel(legacy, 540, 300))).toBe(true); // środek: granica połówek wypada w y≈350
+  const size = (w: number, h: number) => ({ w, h });
+
+  it('przesunięcie w górę/dół odsłania inną część zdjęcia, brak kadru = środek', async () => {
+    const src = await split(900, 1200, true); // cover w 1080×700 → 1080×1440, granica połówek w y=720 zdjęcia
+    const up = await renderPng(<Canvas><PhotoTop src={src} height={700} size={size(900, 1200)} crop={{ dx: 0, dy: 370, zoom: 100 }} /></Canvas>);
+    const down = await renderPng(<Canvas><PhotoTop src={src} height={700} size={size(900, 1200)} crop={{ dx: 0, dy: -370, zoom: 100 }} /></Canvas>);
+    expect(isRed(await pixel(up, 540, 400))).toBe(true); // zdjęcie zjechało w dół → widać górę (czerwoną)
+    expect(isBlue(await pixel(down, 540, 400))).toBe(true);
+    const legacy = await renderPng(<Canvas><PhotoTop src={src} height={700} size={size(900, 1200)} crop={{ x: 50, y: 100, zoom: 100 }} /></Canvas>);
+    expect(isRed(await pixel(legacy, 540, 300))).toBe(true); // stary format kadru → środek: granica w y≈350
     expect(isBlue(await pixel(legacy, 540, 450))).toBe(true);
   });
 
-  it('przybliżenie powiększa wycinek — ten sam punkt planszy trafia w inną część zdjęcia', async () => {
-    const src = await split(1600, 700, false); // cover → 1600×700, połówki rozdziela x=800
-    const z100 = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 0, y: 50, zoom: 100 }} /></Canvas>);
-    const z200 = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 0, y: 50, zoom: 200 }} /></Canvas>);
-    expect(isBlue(await pixel(z100, 900, 400))).toBe(true); // x=900 na planszy = 900 w zdjęciu (prawa połówka)
-    expect(isRed(await pixel(z200, 900, 400))).toBe(true); // przy 200% = 450 w zdjęciu (lewa połówka)
-    // przybliżone zdjęcie nie wyłazi poza swoje pole — pod klinem nadal biały grunt
-    expect((await pixel(z200, 540, 1000))[0]).toBeGreaterThan(240);
+  it('wielkość poniżej 100% zostawia ciemne tło wokół zdjęcia, a przybliżenie nie wyłazi poza pole', async () => {
+    const src = await split(1600, 700, false);
+    const small = await renderPng(<Canvas><PhotoTop src={src} height={700} size={size(1600, 700)} crop={{ dx: 0, dy: 0, zoom: 40 }} /></Canvas>);
+    const [r, g, b] = await pixel(small, 540, 600); // poniżej pomniejszonego zdjęcia (zajmuje y 210–490), nad klinem
+    expect(r + g + b).toBeLessThan(60); // tło INK, nie biel
+    const big = await renderPng(<Canvas><PhotoTop src={src} height={700} size={size(1600, 700)} crop={{ dx: 800, dy: 0, zoom: 200 }} /></Canvas>);
+    expect(isRed(await pixel(big, 900, 400))).toBe(true); // przesunięte w prawo → pod x=900 lewa (czerwona) połówka
+    expect((await pixel(big, 540, 1000))[0]).toBeGreaterThan(240); // pod klinem nadal biały grunt
   });
 });

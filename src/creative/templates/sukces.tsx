@@ -36,7 +36,7 @@ function headlineStyle(raw: string): { text: string; size: number; lineHeight: n
   return { text: s, size: 36, lineHeight: 1.15 };
 }
 
-export function SukcesCreative({ post, photo, partnerBand }: CreativeProps) {
+export function SukcesCreative({ post, photo, photoSize, partnerBand }: CreativeProps) {
   const f = post.form as SukcesForm;
   const names = f.names.slice(0, 3);
   const kicker = post.kicker || [KIND_LABEL[f.kind], f.team].filter(Boolean).join(' · ');
@@ -67,7 +67,7 @@ export function SukcesCreative({ post, photo, partnerBand }: CreativeProps) {
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={photoHeight('sukces', partnerBand)} crop={post.photoCrop} />
+        <PhotoTop src={photo} height={photoHeight('sukces', partnerBand)} crop={post.photoCrop} size={photoSize} />
         <Logo white />
         <div style={{ position: 'absolute', left: M, top: 830, width: 950, display: 'flex', flexDirection: 'column' }}>
           <Kicker>{kicker}</Kicker>

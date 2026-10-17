@@ -59,7 +59,7 @@ function VenueLabel({ children, white }: { children: string; white?: boolean }) 
   );
 }
 
-export function MeczCreative({ post, photo, partnerBand }: CreativeProps) {
+export function MeczCreative({ post, photo, photoSize, partnerBand }: CreativeProps) {
   const f = post.form as MeczForm;
   const kicker = post.kicker || `Wynik meczu${f.team ? ` · ${f.team}` : ''}`;
   const where = venueLabel(post) ?? '';
@@ -67,7 +67,7 @@ export function MeczCreative({ post, photo, partnerBand }: CreativeProps) {
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={photoHeight('mecz', partnerBand)} crop={post.photoCrop} />
+        <PhotoTop src={photo} height={photoHeight('mecz', partnerBand)} crop={post.photoCrop} size={photoSize} />
         <Logo white />
         <VenueLabel white>{where}</VenueLabel>
         <div style={{ position: 'absolute', left: M, top: 770, width: 950, display: 'flex', flexDirection: 'column' }}>

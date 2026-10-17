@@ -1,14 +1,13 @@
 'use client';
 import { useRef, useState } from 'react';
 import { MIN_CAPTION } from '@/domain/limits';
-import { CROP_ZOOM_MAX, DEFAULT_CROP, type PhotoCrop, type PhotoStyle } from '@/domain/types';
+import { CROP_OFFSET_MAX, CROP_ZOOM_MAX, CROP_ZOOM_MIN, DEFAULT_CROP, type PhotoCrop, type PhotoStyle } from '@/domain/types';
 import { LiveCreative } from './LiveCreative';
 export type Generated = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle; photoCrop: PhotoCrop; photoHeight: number; photoLabel: string | null };
 
-const MOVE_STEP = 10, ZOOM_STEP = 25;
-/** Ile ciszy po ostatnim kliknięciu, zanim kadr idzie na serwer — seria kliknięć = jeden render, nie dziesięć. */
+/** Ile ciszy po ostatnim ruchu suwaka, zanim kadr idzie na serwer — przeciągnięcie = jeden render, nie sto. */
 const SAVE_DEBOUNCE_MS = 600;
-const sameCrop = (a: PhotoCrop, b: PhotoCrop) => a.x === b.x && a.y === b.y && a.zoom === b.zoom;
+const sameCrop = (a: PhotoCrop, b: PhotoCrop) => a.dx === b.dx && a.dy === b.dy && a.zoom === b.zoom;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 /** Tekst posta (`caption`) NIE jest stanem tego komponentu — trzyma go `NewPostClient`, bo „Popraw dane"
@@ -66,17 +65,16 @@ export function Preview({
   // plansza z serwera nie pokazuje jeszcze bieżącego kadru albo dopiero się wczytuje → pokaż podgląd z przeglądarki
   const live = !sameCrop(crop, gen.photoCrop) || loadedUrl !== gen.creativeUrl;
   const cropPending = !sameCrop(crop, gen.photoCrop);
-  const step = (dx: number, dy: number, dz: number) =>
-    changeCrop({ x: clamp(crop.x + dx, 0, 100), y: clamp(crop.y + dy, 0, 100), zoom: clamp(crop.zoom + dz, 100, CROP_ZOOM_MAX) });
-  // [etykieta, opis dla czytnika, Δx, Δy, Δzoom, czy już na granicy]
-  const cropButtons: Array<[string, string, number, number, number, boolean]> = [
-    ['▲ Góra', 'Pokaż wyższą część zdjęcia', 0, -MOVE_STEP, 0, crop.y <= 0],
-    ['▼ Dół', 'Pokaż niższą część zdjęcia', 0, MOVE_STEP, 0, crop.y >= 100],
-    ['◀ Lewo', 'Pokaż lewą część zdjęcia', -MOVE_STEP, 0, 0, crop.x <= 0],
-    ['▶ Prawo', 'Pokaż prawą część zdjęcia', MOVE_STEP, 0, 0, crop.x >= 100],
-    ['＋ Przybliż', 'Przybliż zdjęcie', 0, 0, ZOOM_STEP, crop.zoom >= CROP_ZOOM_MAX],
-    ['－ Oddal', 'Oddal zdjęcie', 0, 0, -ZOOM_STEP, crop.zoom <= 100],
+  // [klucz, etykieta, min, max, krok, opis kierunku dla wartości]
+  const sliders: Array<[keyof PhotoCrop, string, number, number, number, (v: number) => string]> = [
+    ['zoom', 'Wielkość (%)', CROP_ZOOM_MIN, CROP_ZOOM_MAX, 1, (v) => (v === 100 ? 'wypełnia pole' : v > 100 ? 'powiększone' : 'pomniejszone')],
+    ['dx', 'Przesunięcie lewo/prawo (px)', -CROP_OFFSET_MAX, CROP_OFFSET_MAX, 5, (v) => (v === 0 ? 'na środku' : v > 0 ? `→ ${v} px w prawo` : `← ${-v} px w lewo`)],
+    ['dy', 'Przesunięcie góra/dół (px)', -CROP_OFFSET_MAX, CROP_OFFSET_MAX, 5, (v) => (v === 0 ? 'na środku' : v > 0 ? `↓ ${v} px w dół` : `↑ ${-v} px w górę`)],
   ];
+  const setPart = (k: keyof PhotoCrop, raw: number, min: number, max: number) => {
+    if (Number.isNaN(raw)) return;
+    changeCrop({ ...crop, [k]: clamp(Math.round(raw), min, max) });
+  };
   return (
     <div className="stack">
       {gen.factWarning && <div className="warn" role="status">Sprawdź, czy dane w tekście się zgadzają: {gen.factWarning}</div>}
@@ -98,14 +96,17 @@ export function Preview({
               </button>
             ))}
           </div>
-          <label id="photo-crop-label" style={{ marginTop: 8 }}>Kadr zdjęcia{crop.zoom > 100 ? ` · przybliżenie ${crop.zoom}%` : ''}</label>
-          <div className="chips" role="group" aria-labelledby="photo-crop-label">
-            {cropButtons.map(([label, aria, dx, dy, dz, atLimit]) => (
-              <button key={label} type="button" className="chip" aria-label={aria} disabled={styleBusy || atLimit} onClick={() => step(dx, dy, dz)}>{label}</button>
-            ))}
-            <button type="button" className="chip" disabled={styleBusy || (crop.x === 50 && crop.y === 50 && crop.zoom === 100)} onClick={() => changeCrop({ ...DEFAULT_CROP })}>Wyśrodkuj</button>
-          </div>
-          <p className="muted" style={{ fontSize: 13, margin: 0 }}>Zdjęcie nie rusza się w którąś stronę? Najpierw przybliż — wtedy jest je czym przesuwać.</p>
+          {sliders.map(([k, label, min, max, stepV, describe]) => (
+            <div key={k} style={{ marginTop: 8 }}>
+              <label htmlFor={`crop-${k}`}>{label}</label>
+              <div className="slider-combo">
+                <input id={`crop-${k}`} type="range" min={min} max={max} step={stepV} value={crop[k]} disabled={styleBusy} onChange={(e) => setPart(k, e.currentTarget.valueAsNumber, min, max)} />
+                <input type="number" aria-label={`${label} — wartość`} min={min} max={max} step={stepV} value={crop[k]} disabled={styleBusy} onChange={(e) => setPart(k, e.currentTarget.valueAsNumber, min, max)} />
+              </div>
+              <p className="muted" style={{ fontSize: 13, margin: 0 }}>{describe(crop[k])}</p>
+            </div>
+          ))}
+          <button type="button" className="chip" style={{ marginTop: 8, alignSelf: 'flex-start' }} disabled={styleBusy || sameCrop(crop, DEFAULT_CROP)} onClick={() => changeCrop({ ...DEFAULT_CROP })}>Resetuj kadr</button>
           {(styleBusy || cropPending) && <p className="muted" role="status" style={{ fontSize: 13, margin: 0 }}>{heroSrc ? 'Zapisuję kadr na planszy…' : 'Przerysowuję planszę…'}</p>}
         </div>
       )}

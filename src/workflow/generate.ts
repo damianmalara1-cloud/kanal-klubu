@@ -6,7 +6,7 @@ import { generateCaption, type Generated } from '@/ai/generate';
 import { AiMeter } from '@/ai/meter';
 import { renderCreative } from '@/creative';
 import { MSG_POST_DONE, MSG_POST_NOT_FOUND } from '@/domain/messages';
-import { CROP_ZOOM_MAX, PHOTO_STYLES, type PhotoCrop, type PhotoStyle, type Post } from '@/domain/types';
+import { CROP_OFFSET_MAX, CROP_ZOOM_MAX, CROP_ZOOM_MIN, PHOTO_STYLES, type PhotoCrop, type PhotoStyle, type Post } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
 
@@ -107,11 +107,11 @@ const isInt = (v: unknown, min: number, max: number): v is number => Number.isIn
 /** Ustawia kadr zdjęcia na planszy (przesunięcie + przybliżenie) i przerysowuje planszę. Jak `setPhotoStyle`:
  * czysto wizualne, bez modelu, nie zjada `MAX_REGEN`. Wartości przychodzą z klienta — sprawdzane co do zakresu. */
 export async function setPhotoCrop(id: string, crop: PhotoCrop): Promise<Post> {
-  if (!crop || !isInt(crop.x, 0, 100) || !isInt(crop.y, 0, 100) || !isInt(crop.zoom, 100, CROP_ZOOM_MAX)) {
+  if (!crop || !isInt(crop.dx, -CROP_OFFSET_MAX, CROP_OFFSET_MAX) || !isInt(crop.dy, -CROP_OFFSET_MAX, CROP_OFFSET_MAX) || !isInt(crop.zoom, CROP_ZOOM_MIN, CROP_ZOOM_MAX)) {
     throw new AppError('Nieprawidłowy kadr zdjęcia', 400);
   }
   const post = await postOr404(id);
   if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
-  await getRepo().update(id, { photoCrop: { x: crop.x, y: crop.y, zoom: crop.zoom } });
+  await getRepo().update(id, { photoCrop: { dx: crop.dx, dy: crop.dy, zoom: crop.zoom } });
   return rerenderCreative(id);
 }

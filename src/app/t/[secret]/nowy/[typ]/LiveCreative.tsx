@@ -42,7 +42,7 @@ export function LiveCreative({
           aria-hidden
           data-testid="kadr-na-zywo"
           style={{
-            position: 'absolute', left: 0, top: 0, width: '100%', height: pct(h, 1350), overflow: 'hidden', pointerEvents: 'none',
+            position: 'absolute', left: 0, top: 0, width: '100%', height: pct(h, 1350), overflow: 'hidden', pointerEvents: 'none', background: '#0D0D0D',
             clipPath: `polygon(0 0, 100% 0, 100% ${pct(h - SLANT_DROP, h)}, 0 100%)`,
             visibility: live && r ? 'visible' : 'hidden',
           }}

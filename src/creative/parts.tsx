@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { DEFAULT_CROP, type PhotoCrop } from '@/domain/types';
+import { normalizeCrop } from '@/domain/types';
 import { assetDataUri } from './assets';
-import { SLANT_DEG } from './geometry';
+import { photoRect, SLANT_DEG } from './geometry';
 
 export const M = 65;
 export { SLANT_DEG, SLANT_DROP } from './geometry';
@@ -99,24 +99,22 @@ export function BarRow({
  * wokół tego rogu. Satori honoruje `transformOrigin` WYŁĄCZNIE jako słowo kluczowe (np. `'left top'`)
  * — wartości `'0 0'` / `'0px 0px'` / `'0% 0%'` są po cichu ignorowane i obrót leci wokół środka.
  *
- * Kadr (`crop`): zdjęcie leży w polu powiększonym o `zoom`, przesuniętym o ten sam procent co `objectPosition`
- * wewnątrz pola — łącznie lewa krawędź obrazu ląduje w `x% × (1080 − szerokość obrazu)`, czyli dokładnie jak
- * CSS `object-position` dla obrazu przybliżonego `zoom` razy ponad `cover`. Pole przycina `overflow: hidden`.
- * `crop` może przyjść jako null ze starego wiersza bazy (sprzed migracji 0007) — wtedy środek bez przybliżenia.
+ * Kadr (`crop`, jak w generatorze KPR): prostokąt zdjęcia liczy `photoRect` (cover wyśrodkowany × `zoom` + przesunięcie
+ * `dx`/`dy`), a `size` to wymiary przekazanego zdjęcia — obraz rysowany jest dokładnie w tym prostokącie, bez `objectFit`.
+ * Odsłonięte pole (zdjęcie wysunięte albo pomniejszone) wypełnia ciemne tło INK. Bez `size` (stare wywołania, testy)
+ * zachowanie sprzed kadru: cover wyśrodkowany. `crop` normalizowany — null/stary format z bazy = domyślny.
  */
-export function PhotoTop({ src, height, crop }: { src: string; height: number; crop?: PhotoCrop | null }) {
+export function PhotoTop({ src, height, crop, size }: { src: string; height: number; crop?: unknown; size?: { w: number; h: number } | null }) {
   const angle = SLANT_DEG;
-  const { x, y, zoom } = crop ?? DEFAULT_CROP;
-  const w = Math.round((1080 * zoom) / 100), h = Math.round((height * zoom) / 100);
+  const r = size ? photoRect(size.w, size.h, height, normalizeCrop(crop)) : null;
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: height + 20, display: 'flex' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height, overflow: 'hidden', display: 'flex' }}>
-        <img
-          src={src}
-          width={w}
-          height={h}
-          style={{ position: 'absolute', left: -Math.round(((w - 1080) * x) / 100), top: -Math.round(((h - height) * y) / 100), objectFit: 'cover', objectPosition: `${x}% ${y}%` }}
-        />
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height, overflow: 'hidden', display: 'flex', background: INK }}>
+        {r ? (
+          <img src={src} width={Math.round(r.width)} height={Math.round(r.height)} style={{ position: 'absolute', left: Math.round(r.left), top: Math.round(r.top) }} />
+        ) : (
+          <img src={src} width={1080} height={height} style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+        )}
       </div>
       <div
         style={{

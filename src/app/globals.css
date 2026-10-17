@@ -115,3 +115,7 @@ h2 { font: 600 18px/1.2 var(--font-text); margin: 24px 0 10px; }
 .cal-cell-dots { display: block; margin-top: 4px; }
 .cal-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 2px 2px 0 0; }
 .cal-cell-dots b { font: 600 10px/1 var(--font-text); vertical-align: middle; }
+/* kadr zdjęcia w podglądzie — suwak + pole liczbowe (jak w generatorze grafik KPR) */
+.slider-combo { display: flex; align-items: center; gap: 10px; }
+.slider-combo input[type="range"] { flex: 1; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+.slider-combo input[type="number"] { width: 84px; flex-shrink: 0; text-align: center; }

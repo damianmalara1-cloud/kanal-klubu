@@ -18,7 +18,7 @@ export function resultStyle(result: string): { text: string; size: number } {
   return { text: s, size: 72 };
 }
 
-export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
+export function TurniejCreative({ post, photo, photoSize, partnerBand }: CreativeProps) {
   const f = post.form as TurniejForm;
   const kicker = post.kicker || 'Turniej';
   const { text: big, size: bigSize } = resultStyle(f.result || post.headline || 'Turniej');
@@ -26,7 +26,7 @@ export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
   const top = photo ? 660 : 420;
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={photoHeight('turniej', partnerBand)} crop={post.photoCrop} />}
+      {photo && <PhotoTop src={photo} height={photoHeight('turniej', partnerBand)} crop={post.photoCrop} size={photoSize} />}
       <Logo white={!!photo} />
       <div style={{ position: 'absolute', left: M, top, width: 950, display: 'flex', flexDirection: 'column' }}>
         <Kicker>{kicker}</Kicker>

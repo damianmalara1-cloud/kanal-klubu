@@ -180,7 +180,9 @@ test('admin: złe hasło, logowanie, trener w tabeli, historia posta z porównan
   await expect(page.getByLabel('Hasło')).toBeVisible();
 });
 
-test('kadr zdjęcia: podgląd zmienia się od razu, plansza z serwera dojeżdża w tle', async ({ page }) => {
+test('kadr zdjęcia: suwaki zmieniają podgląd od razu, plansza z serwera dojeżdża w tle', async ({ page }) => {
+  const shot = (name: string) =>
+    process.env.KADR_SHOTS ? page.getByRole('img', { name: 'Plansza' }).locator('..').screenshot({ path: `${process.env.KADR_SHOTS}/${name}.png` }) : null;
   await page.goto(`/t/${SECRET}`);
   await page.getByRole('button', { name: 'Ania' }).click();
   await page.getByRole('link', { name: 'Mecz' }).click();
@@ -188,23 +190,26 @@ test('kadr zdjęcia: podgląd zmienia się od razu, plansza z serwera dojeżdża
   await page.getByLabel('Rywal', { exact: true }).fill('Kadr Test');
   await page.getByLabel('Bramki UKS Banino').fill('20');
   await page.getByLabel('Bramki rywala').fill('20');
-  await page.getByLabel('Dodaj zdjęcia').setInputFiles(['tests/e2e/fixtures/foto.jpg']);
+  await page.getByLabel('Dodaj zdjęcia').setInputFiles([process.env.KADR_FOTO ?? 'tests/e2e/fixtures/foto.jpg']);
+  await expect(page.getByRole('button', { name: 'Usuń zdjęcie 1' })).toBeVisible(); // zdjęcie przetworzone, zanim pójdzie „Wygeneruj"
   await page.getByRole('button', { name: 'Wygeneruj post' }).click();
   await expectPlanszaLoaded(page);
   const live = page.getByTestId('kadr-na-zywo');
   await expect(live).toBeHidden(); // plansza z serwera pokazuje bieżący kadr — nakładka niepotrzebna
+  await shot('0-start');
   const before = await page.getByRole('img', { name: 'Plansza' }).getAttribute('src');
-  await page.getByRole('button', { name: 'Przybliż zdjęcie' }).click();
+  await page.getByRole('slider', { name: 'Wielkość (%)' }).fill('160');
   await expect(live).toBeVisible({ timeout: 300 }); // natychmiast, bez czekania na serwer
-  if (process.env.KADR_SHOTS) await page.getByRole('img', { name: 'Plansza' }).locator('..').screenshot({ path: `${process.env.KADR_SHOTS}/1-po-kliku.png` });
-  await page.getByRole('button', { name: 'Pokaż wyższą część zdjęcia' }).click();
-  await expect(page.getByText('Kadr zdjęcia · przybliżenie 125%')).toBeVisible();
+  await page.getByRole('slider', { name: 'Przesunięcie lewo/prawo (px)' }).fill('-200');
+  await page.getByRole('slider', { name: 'Przesunięcie góra/dół (px)' }).fill('150');
+  await expect(page.getByText('← 200 px w lewo')).toBeVisible();
+  await shot('1-podglad-na-zywo');
   // po ciszy kadr idzie na serwer, nowa plansza się wczytuje i nakładka znika
   await expect(live).toBeHidden({ timeout: 30_000 });
   expect(await page.getByRole('img', { name: 'Plansza' }).getAttribute('src')).not.toBe(before);
-  if (process.env.KADR_SHOTS) await page.getByRole('img', { name: 'Plansza' }).locator('..').screenshot({ path: `${process.env.KADR_SHOTS}/2-plansza-z-serwera.png` });
-  // „Gotowe" tuż po kliknięciu (przed upływem ciszy) i tak zapisuje kadr przed zamknięciem posta
-  await page.getByRole('button', { name: 'Oddal zdjęcie' }).click();
+  await shot('2-plansza-z-serwera');
+  // „Gotowe" tuż po ruchu suwaka (przed upływem ciszy) i tak zapisuje kadr przed zamknięciem posta
+  await page.getByRole('slider', { name: 'Wielkość (%)' }).fill('60');
   await page.getByRole('button', { name: 'Gotowe' }).click();
   await expect(page.getByRole('heading', { name: 'Gotowe' })).toBeVisible({ timeout: 30_000 });
 });

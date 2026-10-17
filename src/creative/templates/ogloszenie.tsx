@@ -100,7 +100,7 @@ export function subLine(team: string | null, kicker: string | null, title: strin
 // krótkie ogłoszenie nie zostawia pustej połowy planszy pod spodem.
 const bottomLimit = (partnerBand: boolean) => (partnerBand ? 1150 : 1350 - M - 10);
 
-export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) {
+export function OgloszenieCreative({ post, photo, photoSize, partnerBand }: CreativeProps) {
   const f = post.form as OgloszenieForm;
   // Nagłówek WYŁĄCZNIE z pola „Tytuł" (UAT D-10): przy ogłoszeniu źródłem prawdy jest trener, a nie model —
   // „Nabór" nie może wjechać na planszę jako wymyślone „ZACZNIJ GRAĆ W BANINIE". `post.headline` model nadal
@@ -126,7 +126,7 @@ export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) 
   const { size, lineHeight } = fitHeadline(headlineText, bottom - top - kickerH - barH - cellsH, photo ? 190 : 240, vs);
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={photoH} crop={post.photoCrop} />}
+      {photo && <PhotoTop src={photo} height={photoH} crop={post.photoCrop} size={photoSize} />}
       <Logo white={!!photo} />
       {!photo && (
         <Kicker style={{ position: 'absolute', left: 500, top: 64, width: 515, justifyContent: 'flex-end', lineHeight: 1 }}>

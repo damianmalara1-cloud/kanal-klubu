@@ -1,4 +1,5 @@
-import type { Post } from '@/domain/types';
+import sharp from 'sharp';
+import { normalizeCrop, type Post } from '@/domain/types';
 import { log } from '@/lib/log';
 import { duotone, originalPhoto } from './duotone';
 import { renderPng } from './render';
@@ -19,17 +20,21 @@ const TEMPLATES = { mecz: MeczCreative, turniej: TurniejCreative, sukces: Sukces
 export async function renderCreative(post: Post, heroPhoto: Buffer | null, opts: { partnerBand: boolean }): Promise<Buffer> {
   const Template = TEMPLATES[post.type];
   let photo: string | null = null;
+  let photoSize: { w: number; h: number } | null = null;
   if (heroPhoto) {
     try {
-      // Przy przybliżeniu bierzemy z oryginału więcej pikseli, żeby wycinek nie był rozmyty (sufit 2400 px — rozmiar data URI).
-      const maxSide = Math.min(2400, Math.round((1400 * (post.photoCrop?.zoom ?? 100)) / 100));
+      // Przy powiększeniu bierzemy z oryginału więcej pikseli, żeby wycinek nie był rozmyty (sufit 2400 px — rozmiar data URI).
+      const zoom = normalizeCrop(post.photoCrop).zoom;
+      const maxSide = Math.min(2400, Math.max(1400, Math.round((1400 * zoom) / 100)));
       const img = post.photoStyle === 'oryginal' ? await originalPhoto(heroPhoto, maxSide) : await duotone(heroPhoto, { maxSide });
+      const meta = await sharp(img).metadata();
       photo = 'data:image/jpeg;base64,' + img.toString('base64');
+      photoSize = meta.width && meta.height ? { w: meta.width, h: meta.height } : null;
     } catch (e) {
       log.warn('duotone nieudany — wariant typograficzny', { post: post.id, err: String(e) });
     }
   }
-  const props: CreativeProps = { post, photo, partnerBand: opts.partnerBand };
+  const props: CreativeProps = { post, photo, photoSize, partnerBand: opts.partnerBand };
   try {
     return await renderPng(Template(props));
   } catch (e) {

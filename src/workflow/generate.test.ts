@@ -166,24 +166,24 @@ describe('setPhotoCrop', () => {
   it('zapisuje kadr i przerysowuje planszę bez modelu — tekst i licznik prób bez zmian', async () => {
     const d = await draft();
     const g = await generate(d.id);
-    expect(g.photoCrop).toEqual({ x: 50, y: 50, zoom: 100 });
+    expect(g.photoCrop).toEqual({ dx: 0, dy: 0, zoom: 100 });
     vi.mocked(renderCreative).mockClear();
-    const p = await setPhotoCrop(d.id, { x: 20, y: 0, zoom: 150 });
-    expect(p.photoCrop).toEqual({ x: 20, y: 0, zoom: 150 });
+    const p = await setPhotoCrop(d.id, { dx: -200, dy: 35, zoom: 40 });
+    expect(p.photoCrop).toEqual({ dx: -200, dy: 35, zoom: 40 });
     expect(p.caption).toBe(g.caption);
     expect(p.regenCount).toBe(0);
-    expect(renderCreative).toHaveBeenCalledWith(expect.objectContaining({ photoCrop: { x: 20, y: 0, zoom: 150 } }), null, { partnerBand: false });
+    expect(renderCreative).toHaveBeenCalledWith(expect.objectContaining({ photoCrop: { dx: -200, dy: 35, zoom: 40 } }), null, { partnerBand: false });
     expect((await allEvents()).filter((e) => e.type === 'ai_generated')).toHaveLength(1);
   });
 
   it('odrzuca kadr spoza zakresu i post po „Gotowe"', async () => {
     const d = await draft();
     await generate(d.id);
-    for (const bad of [{ x: -1, y: 50, zoom: 100 }, { x: 50, y: 101, zoom: 100 }, { x: 50, y: 50, zoom: 99 }, { x: 50, y: 50, zoom: 251 }, { x: 1.5, y: 50, zoom: 100 }, null]) {
+    for (const bad of [{ dx: -801, dy: 0, zoom: 100 }, { dx: 0, dy: 801, zoom: 100 }, { dx: 0, dy: 0, zoom: 19 }, { dx: 0, dy: 0, zoom: 301 }, { dx: 1.5, dy: 0, zoom: 100 }, { x: 50, y: 50, zoom: 100 }, null]) {
       // @ts-expect-error — z klienta może przyjść cokolwiek
       await expect(setPhotoCrop(d.id, bad)).rejects.toMatchObject({ status: 400 });
     }
     await getRepo().update(d.id, { status: 'done' });
-    await expect(setPhotoCrop(d.id, { x: 50, y: 50, zoom: 100 })).rejects.toMatchObject({ status: 409 });
+    await expect(setPhotoCrop(d.id, { dx: 0, dy: 0, zoom: 100 })).rejects.toMatchObject({ status: 409 });
   });
 });
