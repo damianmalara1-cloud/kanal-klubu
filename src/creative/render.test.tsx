@@ -72,3 +72,41 @@ describe('renderPng', () => {
     expect(yLeft).toBeGreaterThan(yRight); // lewa krawędź cięta niżej (później) niż prawa — ukos opada w lewo
   });
 });
+
+describe('PhotoTop — kadr', () => {
+  /** Zdjęcie z dwiema połówkami w kolorach `a` i `b` (pionowo: góra/dół, poziomo: lewo/prawo). */
+  const split = async (w: number, h: number, vertical: boolean) => {
+    const half = { width: vertical ? w : w / 2, height: vertical ? h / 2 : h, channels: 3 as const };
+    const a = await sharp({ create: { ...half, background: { r: 230, g: 20, b: 20 } } }).png().toBuffer();
+    const b = await sharp({ create: { ...half, background: { r: 20, g: 20, b: 230 } } }).png().toBuffer();
+    const img = await sharp({ create: { width: w, height: h, channels: 3, background: '#000' } })
+      .composite([{ input: a, left: 0, top: 0 }, { input: b, left: vertical ? 0 : w / 2, top: vertical ? h / 2 : 0 }])
+      .jpeg()
+      .toBuffer();
+    return 'data:image/jpeg;base64,' + img.toString('base64');
+  };
+  const pixel = async (png: Buffer, left: number, top: number) => [...(await sharp(png).extract({ left, top, width: 1, height: 1 }).raw().toBuffer())];
+  const isRed = ([r, , b]: number[]) => r > 150 && b < 100;
+  const isBlue = ([r, , b]: number[]) => b > 150 && r < 100;
+
+  it('y=0 pokazuje górę pionowego zdjęcia, y=100 dół, brak kadru = środek', async () => {
+    const src = await split(900, 1200, true); // cover w 1080×700 → 1080×1440, nadmiar 740 px w pionie
+    const top = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 50, y: 0, zoom: 100 }} /></Canvas>);
+    const bottom = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 50, y: 100, zoom: 100 }} /></Canvas>);
+    expect(isRed(await pixel(top, 540, 400))).toBe(true);
+    expect(isBlue(await pixel(bottom, 540, 400))).toBe(true);
+    const legacy = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={null} /></Canvas>);
+    expect(isRed(await pixel(legacy, 540, 300))).toBe(true); // środek: granica połówek wypada w y≈350
+    expect(isBlue(await pixel(legacy, 540, 450))).toBe(true);
+  });
+
+  it('przybliżenie powiększa wycinek — ten sam punkt planszy trafia w inną część zdjęcia', async () => {
+    const src = await split(1600, 700, false); // cover → 1600×700, połówki rozdziela x=800
+    const z100 = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 0, y: 50, zoom: 100 }} /></Canvas>);
+    const z200 = await renderPng(<Canvas><PhotoTop src={src} height={700} crop={{ x: 0, y: 50, zoom: 200 }} /></Canvas>);
+    expect(isBlue(await pixel(z100, 900, 400))).toBe(true); // x=900 na planszy = 900 w zdjęciu (prawa połówka)
+    expect(isRed(await pixel(z200, 900, 400))).toBe(true); // przy 200% = 450 w zdjęciu (lewa połówka)
+    // przybliżone zdjęcie nie wyłazi poza swoje pole — pod klinem nadal biały grunt
+    expect((await pixel(z200, 540, 1000))[0]).toBeGreaterThan(240);
+  });
+});

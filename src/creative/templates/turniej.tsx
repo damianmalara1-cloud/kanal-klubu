@@ -25,7 +25,7 @@ export function TurniejCreative({ post, photo, partnerBand }: CreativeProps) {
   const top = photo ? 660 : 420;
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={600} />}
+      {photo && <PhotoTop src={photo} height={600} crop={post.photoCrop} />}
       <Logo white={!!photo} />
       <div style={{ position: 'absolute', left: M, top, width: 950, display: 'flex', flexDirection: 'column' }}>
         <Kicker>{kicker}</Kicker>

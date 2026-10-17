@@ -1,4 +1,4 @@
-import type { Post, PostForm, PostType } from '@/domain/types';
+import { DEFAULT_CROP, type Post, type PostForm, type PostType } from '@/domain/types';
 
 export interface NewPost { author: string; type: PostType; form: PostForm; ip: string | null; partnerInfo: boolean; purgeAfter: string }
 
@@ -16,7 +16,7 @@ export interface PostsRepo {
 export function blankPost(id: string, now: string, p: NewPost): Post {
   return {
     id, createdAt: now, updatedAt: now, author: p.author, type: p.type, form: structuredClone(p.form),
-    photos: [], heroPhoto: null, photoStyle: 'klub', captionAi: null, caption: null, headline: null, kicker: null,
+    photos: [], heroPhoto: null, photoStyle: 'klub', photoCrop: { ...DEFAULT_CROP }, captionAi: null, caption: null, headline: null, kicker: null,
     creativePath: null, regenCount: 0, factWarning: null, partnerInfo: p.partnerInfo,
     status: 'draft', purgeAfter: p.purgeAfter, purgedAt: null, ip: p.ip,
   };
@@ -24,7 +24,7 @@ export function blankPost(id: string, now: string, p: NewPost): Post {
 
 export const COLS: Record<keyof Post, string> = {
   id: 'id', createdAt: 'created_at', updatedAt: 'updated_at', author: 'author', type: 'type', form: 'form',
-  photos: 'photos', heroPhoto: 'hero_photo', photoStyle: 'photo_style', captionAi: 'caption_ai', caption: 'caption', headline: 'headline', kicker: 'kicker',
+  photos: 'photos', heroPhoto: 'hero_photo', photoStyle: 'photo_style', photoCrop: 'photo_crop', captionAi: 'caption_ai', caption: 'caption', headline: 'headline', kicker: 'kicker',
   creativePath: 'creative_path', regenCount: 'regen_count', factWarning: 'fact_warning', partnerInfo: 'partner_info', status: 'status',
   purgeAfter: 'purge_after', purgedAt: 'purged_at', ip: 'ip',
 };

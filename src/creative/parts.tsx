@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { DEFAULT_CROP, type PhotoCrop } from '@/domain/types';
 import { assetDataUri } from './assets';
 
 export const M = 65;
@@ -97,12 +98,26 @@ export function BarRow({
  * cięta o SLANT_DROP px wyżej. Klin to prostokąt zaczepiony w (0, height) i obrócony o `-SLANT_DEG`
  * wokół tego rogu. Satori honoruje `transformOrigin` WYŁĄCZNIE jako słowo kluczowe (np. `'left top'`)
  * — wartości `'0 0'` / `'0px 0px'` / `'0% 0%'` są po cichu ignorowane i obrót leci wokół środka.
+ *
+ * Kadr (`crop`): zdjęcie leży w polu powiększonym o `zoom`, przesuniętym o ten sam procent co `objectPosition`
+ * wewnątrz pola — łącznie lewa krawędź obrazu ląduje w `x% × (1080 − szerokość obrazu)`, czyli dokładnie jak
+ * CSS `object-position` dla obrazu przybliżonego `zoom` razy ponad `cover`. Pole przycina `overflow: hidden`.
+ * `crop` może przyjść jako null ze starego wiersza bazy (sprzed migracji 0007) — wtedy środek bez przybliżenia.
  */
-export function PhotoTop({ src, height }: { src: string; height: number }) {
+export function PhotoTop({ src, height, crop }: { src: string; height: number; crop?: PhotoCrop | null }) {
   const angle = SLANT_DEG;
+  const { x, y, zoom } = crop ?? DEFAULT_CROP;
+  const w = Math.round((1080 * zoom) / 100), h = Math.round((height * zoom) / 100);
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height: height + 20, display: 'flex' }}>
-      <img src={src} width={1080} height={height} style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 1080, height, overflow: 'hidden', display: 'flex' }}>
+        <img
+          src={src}
+          width={w}
+          height={h}
+          style={{ position: 'absolute', left: -Math.round(((w - 1080) * x) / 100), top: -Math.round(((h - height) * y) / 100), objectFit: 'cover', objectPosition: `${x}% ${y}%` }}
+        />
+      </div>
       <div
         style={{
           position: 'absolute',

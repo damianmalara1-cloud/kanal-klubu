@@ -6,7 +6,7 @@ import { generateCaption, type Generated } from '@/ai/generate';
 import { AiMeter } from '@/ai/meter';
 import { renderCreative } from '@/creative';
 import { MSG_POST_DONE, MSG_POST_NOT_FOUND } from '@/domain/messages';
-import { PHOTO_STYLES, type PhotoStyle, type Post } from '@/domain/types';
+import { CROP_ZOOM_MAX, PHOTO_STYLES, type PhotoCrop, type PhotoStyle, type Post } from '@/domain/types';
 import { AppError } from '@/lib/errors';
 import { nowIso, plusHours } from '@/lib/dates';
 
@@ -20,7 +20,7 @@ async function postOr404(id: string): Promise<Post> {
 }
 
 /** Renderuje planszę dla aktualnego stanu posta i zapisuje ją do storage. Wołają ją `generate` (po modelu)
- * i `setPhotoStyle` (zmiana wyglądu zdjęcia — bez modelu, bez kosztu, nie liczy się do limitu prób). */
+ * oraz `setPhotoStyle`/`setPhotoCrop` (zmiana wyglądu/kadru zdjęcia — bez modelu, bez kosztu, nie liczy się do limitu prób). */
 async function rerenderCreative(id: string): Promise<Post> {
   const c = getConfig();
   const repo = getRepo();
@@ -99,5 +99,19 @@ export async function setPhotoStyle(id: string, style: PhotoStyle): Promise<Post
   const post = await postOr404(id);
   if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
   if (post.photoStyle !== style) await getRepo().update(id, { photoStyle: style });
+  return rerenderCreative(id);
+}
+
+const isInt = (v: unknown, min: number, max: number): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
+
+/** Ustawia kadr zdjęcia na planszy (przesunięcie + przybliżenie) i przerysowuje planszę. Jak `setPhotoStyle`:
+ * czysto wizualne, bez modelu, nie zjada `MAX_REGEN`. Wartości przychodzą z klienta — sprawdzane co do zakresu. */
+export async function setPhotoCrop(id: string, crop: PhotoCrop): Promise<Post> {
+  if (!crop || !isInt(crop.x, 0, 100) || !isInt(crop.y, 0, 100) || !isInt(crop.zoom, 100, CROP_ZOOM_MAX)) {
+    throw new AppError('Nieprawidłowy kadr zdjęcia', 400);
+  }
+  const post = await postOr404(id);
+  if (post.status !== 'draft') throw new AppError(MSG_POST_DONE, 409);
+  await getRepo().update(id, { photoCrop: { x: crop.x, y: crop.y, zoom: crop.zoom } });
   return rerenderCreative(id);
 }

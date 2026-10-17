@@ -4,11 +4,11 @@ import { getRepo } from '@/db';
 import { getStorage } from '@/storage';
 import { SIGNED_URL_TTL_S } from '@/storage/types';
 import { postTitle } from '@/domain/forms';
-import type { PhotoStyle, Post, PostStatus, PostType } from '@/domain/types';
+import { DEFAULT_CROP, type PhotoCrop, type PhotoStyle, type Post, type PostStatus, type PostType } from '@/domain/types';
 import { clientIp, isValidSecret } from '@/lib/access';
 import { actionFail } from '@/lib/errors';
 import { createDraft, setHeroPhoto } from '@/workflow/draft';
-import { generate, MAX_REGEN, setPhotoStyle } from '@/workflow/generate';
+import { generate, MAX_REGEN, setPhotoCrop, setPhotoStyle } from '@/workflow/generate';
 import { finish } from '@/workflow/finish';
 
 type Err = { error: string };
@@ -42,12 +42,12 @@ async function creativeUrlOf(p: Post): Promise<string> {
   return `${url}${url.includes('?') ? '&' : '?'}v=${Date.parse(p.updatedAt)}`;
 }
 
-type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle };
+type GeneratedOut = { caption: string; creativeUrl: string; factWarning: string | null; regenCount: number; canRegen: boolean; hasPhoto: boolean; photoStyle: PhotoStyle; photoCrop: PhotoCrop };
 
 async function generatedOut(p: Post): Promise<GeneratedOut> {
   return {
     caption: p.caption ?? '', creativeUrl: await creativeUrlOf(p), factWarning: p.factWarning,
-    regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle,
+    regenCount: p.regenCount, canRegen: p.regenCount < MAX_REGEN, hasPhoto: p.heroPhoto !== null, photoStyle: p.photoStyle, photoCrop: p.photoCrop ?? DEFAULT_CROP,
   };
 }
 
@@ -65,6 +65,16 @@ export async function setPhotoStyleAction(secret: string, id: string, style: Pho
   try {
     const p = await setPhotoStyle(id, style);
     return { creativeUrl: await creativeUrlOf(p), photoStyle: p.photoStyle };
+  } catch (e) {
+    return actionFail(e);
+  }
+}
+
+export async function setPhotoCropAction(secret: string, id: string, crop: PhotoCrop): Promise<{ creativeUrl: string; photoCrop: PhotoCrop } | Err> {
+  if (!isValidSecret(secret)) return BAD;
+  try {
+    const p = await setPhotoCrop(id, crop);
+    return { creativeUrl: await creativeUrlOf(p), photoCrop: p.photoCrop };
   } catch (e) {
     return actionFail(e);
   }

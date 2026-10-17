@@ -66,7 +66,7 @@ export function SukcesCreative({ post, photo, partnerBand }: CreativeProps) {
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={770} />
+        <PhotoTop src={photo} height={770} crop={post.photoCrop} />
         <Logo white />
         <div style={{ position: 'absolute', left: M, top: 830, width: 950, display: 'flex', flexDirection: 'column' }}>
           <Kicker>{kicker}</Kicker>

@@ -21,7 +21,10 @@ export async function renderCreative(post: Post, heroPhoto: Buffer | null, opts:
   let photo: string | null = null;
   if (heroPhoto) {
     try {
-      photo = 'data:image/jpeg;base64,' + (await (post.photoStyle === 'oryginal' ? originalPhoto(heroPhoto) : duotone(heroPhoto))).toString('base64');
+      // Przy przybliżeniu bierzemy z oryginału więcej pikseli, żeby wycinek nie był rozmyty (sufit 2400 px — rozmiar data URI).
+      const maxSide = Math.min(2400, Math.round((1400 * (post.photoCrop?.zoom ?? 100)) / 100));
+      const img = post.photoStyle === 'oryginal' ? await originalPhoto(heroPhoto, maxSide) : await duotone(heroPhoto, { maxSide });
+      photo = 'data:image/jpeg;base64,' + img.toString('base64');
     } catch (e) {
       log.warn('duotone nieudany — wariant typograficzny', { post: post.id, err: String(e) });
     }

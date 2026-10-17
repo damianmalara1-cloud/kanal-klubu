@@ -125,7 +125,7 @@ export function OgloszenieCreative({ post, photo, partnerBand }: CreativeProps) 
   const { size, lineHeight } = fitHeadline(headlineText, bottom - top - kickerH - barH - cellsH, photo ? 190 : 240, vs);
   return (
     <Canvas>
-      {photo && <PhotoTop src={photo} height={photoHeight} />}
+      {photo && <PhotoTop src={photo} height={photoHeight} crop={post.photoCrop} />}
       <Logo white={!!photo} />
       {!photo && (
         <Kicker style={{ position: 'absolute', left: 500, top: 64, width: 515, justifyContent: 'flex-end', lineHeight: 1 }}>

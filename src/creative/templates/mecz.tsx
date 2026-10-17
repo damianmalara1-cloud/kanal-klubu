@@ -66,7 +66,7 @@ export function MeczCreative({ post, photo, partnerBand }: CreativeProps) {
   if (photo) {
     return (
       <Canvas>
-        <PhotoTop src={photo} height={700} />
+        <PhotoTop src={photo} height={700} crop={post.photoCrop} />
         <Logo white />
         <VenueLabel white>{where}</VenueLabel>
         <div style={{ position: 'absolute', left: M, top: 770, width: 950, display: 'flex', flexDirection: 'column' }}>
