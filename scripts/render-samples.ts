@@ -11,7 +11,7 @@ const base: Omit<Post, 'type' | 'form' | 'headline' | 'kicker'> = {
   photos: [],
   heroPhoto: null,
   photoStyle: 'klub',
-  photoCrop: { x: 50, y: 50, zoom: 100 },
+  photoCrop: { dx: 0, dy: 0, zoom: 100 },
   captionAi: null,
   caption: null,
   creativePath: null,
